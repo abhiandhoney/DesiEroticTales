@@ -11,7 +11,10 @@ git remote set-url origin "$REMOTE"
 gh auth setup-git 2>/dev/null || true
 
 git add -A
-git commit -m "fix: vboxsf npm + docs/project-history for AI handoff" || echo "Nothing new to commit"
-git push -u origin main
+git commit -m "chore: add CNAME for custom domain" || echo "Nothing new to commit"
 
-echo "Done. Check: $REMOTE"
+# Remote has unrelated history (placeholder index.html + CNAME from GitHub UI).
+# Local has the full app — force push replaces remote safely.
+git push --force-with-lease origin main
+
+echo "Pushed to $REMOTE"
