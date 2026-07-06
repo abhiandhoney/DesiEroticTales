@@ -4,19 +4,15 @@ export default function ReadingProgress() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    function updateProgress() {
-      const scrollTop = window.scrollY;
+    function update() {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      const pct = docHeight > 0 ? (window.scrollY / docHeight) * 100 : 0;
       setProgress(Math.min(100, Math.max(0, pct)));
     }
-
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    updateProgress();
-    return () => window.removeEventListener('scroll', updateProgress);
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => window.removeEventListener('scroll', update);
   }, []);
 
-  return (
-    <div className="reading-progress" style={{ width: `${progress}%` }} />
-  );
+  return <div className="reading-progress" style={{ width: `${progress}%` }} />;
 }

@@ -20,22 +20,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/stories" element={<Stories />} />
             <Route path="/story/:id" element={<StoryDetail />} />
-            <Route
-              path="/submit"
-              element={
-                <ProtectedRoute requireWriter>
-                  <Submit />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
           </Routes>
         </main>
         <Footer />

@@ -1,16 +1,12 @@
 import { Link } from 'react-router-dom';
 import type { Story } from '../types';
 
-interface StoryCardProps {
-  story: Story;
-}
-
 function getTeaser(content: string, maxLen = 120): string {
   const plain = content.replace(/\s+/g, ' ').trim();
   return plain.length > maxLen ? plain.slice(0, maxLen) + '…' : plain;
 }
 
-export default function StoryCard({ story }: StoryCardProps) {
+export default function StoryCard({ story }: { story: Story }) {
   return (
     <Link to={`/story/${story.id}`} className="story-card">
       {story.image_url && (

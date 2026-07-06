@@ -22,42 +22,30 @@ export function useAuth(): AuthState {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchProfile(s.user.id);
-      } else {
+      if (s?.user) fetchProfile(s.user.id);
+      else setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) fetchProfile(s.user.id);
+      else {
+        setProfile(null);
         setLoading(false);
       }
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
-        setSession(s);
-        setUser(s?.user ?? null);
-        if (s?.user) {
-          fetchProfile(s.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
 
     return () => subscription.unsubscribe();
   }, []);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data);
     setLoading(false);
   }
 
-  const isAdmin =
-    profile?.role === 'admin' || user?.email === ADMIN_EMAIL;
+  const isAdmin = profile?.role === 'admin' || user?.email === ADMIN_EMAIL;
   const isWriter = !!user;
 
   return { user, session, profile, loading, isAdmin, isWriter };
@@ -66,9 +54,7 @@ export function useAuth(): AuthState {
 export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/`,
-    },
+    options: { redirectTo: `${window.location.origin}/` },
   });
   if (error) throw error;
 }

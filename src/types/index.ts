@@ -1,5 +1,4 @@
 export type UserRole = 'writer' | 'admin';
-
 export type StoryStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Profile {

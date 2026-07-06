@@ -6,18 +6,8 @@ export default function AgeGate() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const verified = localStorage.getItem(STORAGE_KEY);
-    if (!verified) setVisible(true);
+    if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
   }, []);
-
-  function confirm() {
-    localStorage.setItem(STORAGE_KEY, 'true');
-    setVisible(false);
-  }
-
-  function decline() {
-    window.location.href = 'https://www.google.com';
-  }
 
   if (!visible) return null;
 
@@ -33,10 +23,10 @@ export default function AgeGate() {
         </p>
         <p className="age-gate-question">Are you 18 years or older?</p>
         <div className="age-gate-actions">
-          <button className="btn btn-primary" onClick={confirm}>
+          <button className="btn btn-primary" onClick={() => { localStorage.setItem(STORAGE_KEY, 'true'); setVisible(false); }}>
             Yes, I am 18+
           </button>
-          <button className="btn btn-ghost" onClick={decline}>
+          <button className="btn btn-ghost" onClick={() => { window.location.href = 'https://www.google.com'; }}>
             No, leave
           </button>
         </div>
