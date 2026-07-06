@@ -92,6 +92,7 @@ export default function Navbar() {
           <div className="navbar-links">
             {navLink('/', 'Home')}
             {navLink('/stories', 'Stories')}
+            {isWriter && navLink('/profile', 'Profile')}
             {isWriter && navLink('/submit', 'Submit')}
             {isAdmin && navLink('/admin', 'Admin')}
           </div>

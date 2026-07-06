@@ -52,7 +52,7 @@ export default function EditStory() {
 
   function handleSuccess() {
     setSuccess(true);
-    setTimeout(() => navigate(isAdmin ? '/admin' : '/submit'), 2500);
+    setTimeout(() => navigate(isAdmin ? '/admin' : '/profile'), 2500);
   }
 
   if (authLoading || loading) {

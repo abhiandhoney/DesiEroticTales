@@ -1,9 +1,8 @@
-import { useState } from 'react';
-
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+import { useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { deleteStoryImage, uploadStoryImage } from '../lib/storyImages';
+import { convertFileToWebP } from '../lib/imageProcessing';
+import { deleteStoryImages, uploadStoryImageBlob, uploadStoryImageBlobs } from '../lib/storyImages';
+import StoryMediaUploader, { type MediaUploadState } from './StoryMediaUploader';
 import {
   STORY_CATEGORIES,
   TEASER_MAX_LENGTH,
@@ -11,6 +10,8 @@ import {
   type StoryCategory,
   type StoryStatus,
 } from '../types';
+
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 
 interface StoryFormProps {
   mode: 'create' | 'edit';
@@ -20,6 +21,15 @@ interface StoryFormProps {
   onSuccess: () => void;
   onCancel?: () => void;
 }
+
+const emptyMediaState = (): MediaUploadState => ({
+  coverBlob: null,
+  coverDisplayUrl: null,
+  persistedCoverUrl: null,
+  persistedGalleryUrls: [],
+  pendingGalleryFiles: [],
+  removedUrls: [],
+});
 
 export default function StoryForm({
   mode,
@@ -36,10 +46,44 @@ export default function StoryForm({
   );
   const [content, setContent] = useState(story?.content ?? '');
   const [status, setStatus] = useState<StoryStatus>(story?.status ?? 'pending');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(story?.image_url ?? null);
+  const [mediaState, setMediaState] = useState<MediaUploadState>(emptyMediaState());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const initialGallery = useMemo(
+    () => (story?.gallery_urls ?? []).filter((u) => u && u !== story?.image_url),
+    [story],
+  );
+
+  async function uploadAllMedia(): Promise<{ coverUrl: string | null; galleryUrls: string[] }> {
+    let coverUrl = mediaState.persistedCoverUrl;
+
+    if (mediaState.coverBlob) {
+      coverUrl = await uploadStoryImageBlob(userId, mediaState.coverBlob, 'cover');
+    }
+
+    const keptGallery = mediaState.persistedGalleryUrls.filter(
+      (u) => !mediaState.removedUrls.includes(u) && u !== coverUrl,
+    );
+
+    for (const file of mediaState.pendingGalleryFiles) {
+      if (file.size > MAX_IMAGE_BYTES) {
+        throw new Error(`"${file.name}" exceeds 12 MB.`);
+      }
+    }
+
+    const galleryBlobs = await Promise.all(
+      mediaState.pendingGalleryFiles.map((file) => convertFileToWebP(file)),
+    );
+    const uploaded = galleryBlobs.length
+      ? await uploadStoryImageBlobs(userId, galleryBlobs, 'gallery')
+      : [];
+
+    return {
+      coverUrl,
+      galleryUrls: [...keptGallery, ...uploaded],
+    };
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,32 +100,22 @@ export default function StoryForm({
       return;
     }
 
-    if (imageFile) {
-      if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
-        setError('Cover image must be JPEG, PNG, or WebP.');
-        return;
-      }
-      if (imageFile.size > MAX_IMAGE_BYTES) {
-        setError('Cover image must be 5 MB or smaller.');
-        return;
-      }
-    }
-
     setSubmitting(true);
     setError('');
 
-    const originalImageUrl = story?.image_url ?? null;
-    let uploadedUrl: string | null = null;
+    const originalCover = story?.image_url ?? null;
+    const originalGallery = [
+      ...(story?.gallery_urls ?? []),
+      ...(originalCover ? [originalCover] : []),
+    ].filter((u, i, arr) => u && arr.indexOf(u) === i);
+
+    let uploadedCover: string | null = null;
+    let uploadedGallery: string[] = [];
 
     try {
-      let imageUrl = currentImageUrl;
-
-      if (imageFile) {
-        uploadedUrl = await uploadStoryImage(userId, imageFile);
-        imageUrl = uploadedUrl;
-      } else if (originalImageUrl && !currentImageUrl) {
-        imageUrl = null;
-      }
+      const { coverUrl, galleryUrls } = await uploadAllMedia();
+      uploadedCover = coverUrl;
+      uploadedGallery = galleryUrls;
 
       if (mode === 'create') {
         const { error: insertError } = await supabase.from('stories').insert({
@@ -91,7 +125,8 @@ export default function StoryForm({
           category,
           status: 'pending',
           user_id: userId,
-          image_url: imageUrl,
+          image_url: coverUrl,
+          gallery_urls: galleryUrls,
         });
         if (insertError) throw insertError;
       } else if (story) {
@@ -100,7 +135,8 @@ export default function StoryForm({
           teaser: teaser.trim() || null,
           content: content.trim(),
           category,
-          image_url: imageUrl,
+          image_url: coverUrl,
+          gallery_urls: galleryUrls,
         };
         if (isAdmin) updates.status = status;
 
@@ -111,27 +147,32 @@ export default function StoryForm({
         if (updateError) throw updateError;
       }
 
-      if (uploadedUrl && originalImageUrl) {
+      const toDelete = [
+        ...mediaState.removedUrls,
+        ...(uploadedCover && originalCover && uploadedCover !== originalCover ? [originalCover] : []),
+      ].filter((u, i, arr) => u && arr.indexOf(u) === i);
+
+      const replacedGallery = originalGallery.filter(
+        (u) => !galleryUrls.includes(u) && !toDelete.includes(u),
+      );
+      toDelete.push(...replacedGallery);
+
+      if (toDelete.length) {
         try {
-          await deleteStoryImage(originalImageUrl);
+          await deleteStoryImages(toDelete);
         } catch {
-          // Best-effort cleanup after successful save.
-        }
-      } else if (!imageFile && originalImageUrl && !currentImageUrl) {
-        try {
-          await deleteStoryImage(originalImageUrl);
-        } catch {
-          // Best-effort cleanup after successful save.
+          // Best-effort storage cleanup.
         }
       }
 
       onSuccess();
     } catch (err) {
-      if (uploadedUrl) {
+      const orphans = [uploadedCover, ...uploadedGallery].filter(Boolean) as string[];
+      if (orphans.length) {
         try {
-          await deleteStoryImage(uploadedUrl);
+          await deleteStoryImages(orphans);
         } catch {
-          // Orphan upload cleanup.
+          // Orphan cleanup.
         }
       }
       const message =
@@ -184,7 +225,7 @@ export default function StoryForm({
           className="textarea textarea-compact"
           value={teaser}
           onChange={(e) => setTeaser(e.target.value)}
-          placeholder="A short hook that draws readers in... (150-200 chars ideal)"
+          placeholder="A short hook that draws readers in..."
           rows={3}
           maxLength={TEASER_MAX_LENGTH}
         />
@@ -240,31 +281,14 @@ export default function StoryForm({
       </div>
 
       <div className="form-group">
-        <label htmlFor="image">Cover image (optional)</label>
-        {currentImageUrl && !imageFile && (
-          <div className="current-image-preview">
-            <img src={currentImageUrl} alt="Current cover" />
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setCurrentImageUrl(null)}
-            >
-              Remove image
-            </button>
-          </div>
-        )}
-        <input
-          id="image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-          className="file-input"
+        <label>Photos</label>
+        <StoryMediaUploader
+          key={story?.id ?? 'new'}
+          initialCoverUrl={story?.image_url ?? null}
+          initialGalleryUrls={initialGallery}
+          onChange={setMediaState}
+          disabled={submitting}
         />
-        <p className="form-hint">
-          {mode === 'edit' && currentImageUrl
-            ? 'Upload a new image to replace the current cover.'
-            : 'Upload a tasteful cover, or leave blank for AI-generated art (coming soon).'}
-        </p>
       </div>
 
       <div className="form-actions">

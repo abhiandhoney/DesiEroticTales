@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import ReadingProgress from '../components/ReadingProgress';
 import StoryCard from '../components/StoryCard';
+import StoryMediaGallery from '../components/StoryMediaGallery';
 
 export default function StoryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -88,11 +89,7 @@ export default function StoryDetail() {
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
       </header>
-      {story.image_url && (
-        <div className="story-hero-image">
-          <img src={story.image_url} alt={story.title} />
-        </div>
-      )}
+      <StoryMediaGallery story={story} />
       <div className="ad-slot ad-slot-story-top" data-adsterra="story-top">{/* ADSTERRA */}</div>
       <div className="story-content">
         {story.content.split(/\n\n+/).filter(Boolean).map((para, i) => (

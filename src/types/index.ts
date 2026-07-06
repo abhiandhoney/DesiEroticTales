@@ -19,6 +19,7 @@ export interface Story {
   status: StoryStatus;
   user_id: string;
   image_url: string | null;
+  gallery_urls: string[] | null;
   views: number;
   created_at: string;
 }
