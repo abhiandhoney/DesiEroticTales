@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Stories from './pages/Stories';
 import StoryDetail from './pages/StoryDetail';
 import Submit from './pages/Submit';
+import EditStory from './pages/EditStory';
 import Admin from './pages/Admin';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/stories" element={<Stories />} />
             <Route path="/story/:id" element={<StoryDetail />} />
             <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
+            <Route path="/edit/:id" element={<ProtectedRoute requireWriter><EditStory /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
           </Routes>
         </main>

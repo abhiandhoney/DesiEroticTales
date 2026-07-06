@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story, StoryStatus } from '../types';
 import { getStoryTeaser } from '../lib/storyTeaser';
@@ -84,13 +85,18 @@ export default function Admin() {
               <h3 className="admin-card-title">{story.title}</h3>
               <p className="admin-card-category">{story.category}</p>
               <p className="admin-preview">{getStoryTeaser(story, 160)}</p>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm admin-review-btn"
-                onClick={() => setReviewStory(story)}
-              >
-                Read &amp; moderate
-              </button>
+              <div className="admin-card-actions">
+                <Link to={`/edit/${story.id}`} className="btn btn-ghost btn-sm">
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setReviewStory(story)}
+                >
+                  Read &amp; moderate
+                </button>
+              </div>
             </article>
           ))}
         </div>

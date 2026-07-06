@@ -57,18 +57,27 @@ export default function StoryForm({
     setError('');
 
     try {
+      const originalImageUrl = story?.image_url ?? null;
       let imageUrl = currentImageUrl;
 
       if (imageFile) {
         const newUrl = await uploadStoryImage(userId, imageFile);
-        if (currentImageUrl) {
+        const oldUrl = originalImageUrl ?? currentImageUrl;
+        if (oldUrl) {
           try {
-            await deleteStoryImage(currentImageUrl);
+            await deleteStoryImage(oldUrl);
           } catch {
             // Best-effort cleanup; update proceeds even if old image delete fails (e.g. RLS).
           }
         }
         imageUrl = newUrl;
+      } else if (originalImageUrl && !currentImageUrl) {
+        try {
+          await deleteStoryImage(originalImageUrl);
+        } catch {
+          // Best-effort cleanup.
+        }
+        imageUrl = null;
       }
 
       if (mode === 'create') {
