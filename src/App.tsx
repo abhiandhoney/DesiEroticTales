@@ -9,10 +9,14 @@ import StoryDetail from './pages/StoryDetail';
 import Submit from './pages/Submit';
 import EditStory from './pages/EditStory';
 import Admin from './pages/Admin';
+import NotFound from './pages/NotFound';
+
+const routerBasename =
+  import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <AgeGate />
       <div className="app">
         <Navbar />
@@ -24,6 +28,7 @@ export default function App() {
             <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute requireWriter><EditStory /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

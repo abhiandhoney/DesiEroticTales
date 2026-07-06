@@ -20,8 +20,12 @@ port = 54323
 
 [auth]
 enabled = true
-site_url = "https://desierotictales.qd.je"
-additional_redirect_urls = ["http://localhost:5173", "https://desierotictales.qd.je"]
+site_url = "http://localhost:5173"
+additional_redirect_urls = [
+  "http://localhost:5173/**",
+  "https://*.workers.dev/**",
+  "https://*.qd.je/**",
+]
 
 [auth.external.google]
 enabled = true

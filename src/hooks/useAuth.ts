@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { getAuthRedirectUrl } from '../lib/site';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL ?? '';
 import type { Profile } from '../types';
@@ -56,7 +57,7 @@ export function useAuth(): AuthState {
 export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/` },
+    options: { redirectTo: getAuthRedirectUrl('/') },
   });
   if (error) throw error;
 }

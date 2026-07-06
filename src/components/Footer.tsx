@@ -1,3 +1,5 @@
+import { getSiteHostname } from '../lib/site';
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -8,7 +10,7 @@ export default function Footer() {
           {' '}| <span className="telugu-text" lang="te" title="Stories (Kathalu)">కథలు</span>
         </p>
         <p className="footer-copy">
-          (c) {new Date().getFullYear()} desierotictales.qd.je | Adults 18+ only
+          (c) {new Date().getFullYear()} {getSiteHostname()} | Adults 18+ only
         </p>
         {/* ADSTERRA: Place ad script block here */}
       </div>
