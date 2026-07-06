@@ -7,10 +7,13 @@ export default function Navbar() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const isActive = (path: string) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
   const navLink = (path: string, label: string) => (
     <Link
       to={path}
-      className={`nav-link ${location.pathname === path ? 'active' : ''}`}
+      className={`nav-link ${isActive(path) ? 'active' : ''}`}
       onClick={() => setMenuOpen(false)}
     >
       {label}

@@ -1,44 +1,44 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { completeOAuthCallback, consumeAuthReturnPath, isAuthCallbackRoute } from '../lib/auth';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { completeOAuthCallback, consumeAuthReturnPath } from '../lib/auth';
 
-interface Props {
-  onDone: (returnPath: string) => void;
-  onError: (message: string) => void;
-}
+export default function AuthCallback() {
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
 
-export default function AuthCallback({ onDone, onError }: Props) {
   useEffect(() => {
-    if (!isAuthCallbackRoute()) {
-      onDone('/');
-      return;
-    }
+    let cancelled = false;
 
-    completeOAuthCallback().then(({ error }) => {
-      if (error) {
-        onError(error);
+    completeOAuthCallback().then(({ error: authError }) => {
+      if (cancelled) return;
+      if (authError) {
+        setError(authError);
         return;
       }
-      onDone(consumeAuthReturnPath());
+      navigate(consumeAuthReturnPath(), { replace: true });
     });
-  }, [onDone, onError]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  if (error) {
+    return (
+      <div className="page error-page">
+        <h2>Sign-in failed</h2>
+        <p className="page-subtitle">{error}</p>
+        <Link to="/" className="btn btn-primary">
+          Back to home
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="page-loading">
       <div className="spinner" />
       <p>Completing sign-in...</p>
-    </div>
-  );
-}
-
-export function AuthCallbackError({ message }: { message: string }) {
-  return (
-    <div className="page error-page">
-      <h2>Sign-in failed</h2>
-      <p className="page-subtitle">{message}</p>
-      <Link to="/" className="btn btn-primary">
-        Back to home
-      </Link>
     </div>
   );
 }
