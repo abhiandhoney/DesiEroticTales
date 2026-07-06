@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { supabase, ADMIN_EMAIL } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL ?? '';
 import type { Profile } from '../types';
 
 interface AuthState {
