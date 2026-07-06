@@ -13,8 +13,10 @@ if (!supabaseUrl || !supabaseKey) {
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     flowType: 'pkce',
-    detectSessionInUrl: true,
+    // Only /auth/callback exchanges the code — auto-detect races and clears the verifier.
+    detectSessionInUrl: false,
     persistSession: true,
     autoRefreshToken: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
 })
