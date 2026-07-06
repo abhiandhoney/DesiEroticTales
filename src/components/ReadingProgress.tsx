@@ -14,5 +14,15 @@ export default function ReadingProgress() {
     return () => window.removeEventListener('scroll', update);
   }, []);
 
-  return <div className="reading-progress" style={{ width: `${progress}%` }} />;
+  return (
+    <div
+      className="reading-progress"
+      style={{ width: `${progress}%` }}
+      role="progressbar"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Reading progress"
+    />
+  );
 }

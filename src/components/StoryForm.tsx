@@ -1,4 +1,7 @@
 import { useState } from 'react';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 import { supabase } from '../lib/supabase';
 import { deleteStoryImage, uploadStoryImage } from '../lib/storyImages';
 import {
@@ -53,30 +56,30 @@ export default function StoryForm({
       return;
     }
 
+    if (imageFile) {
+      if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
+        setError('Cover image must be JPEG, PNG, or WebP.');
+        return;
+      }
+      if (imageFile.size > MAX_IMAGE_BYTES) {
+        setError('Cover image must be 5 MB or smaller.');
+        return;
+      }
+    }
+
     setSubmitting(true);
     setError('');
 
+    const originalImageUrl = story?.image_url ?? null;
+    let uploadedUrl: string | null = null;
+
     try {
-      const originalImageUrl = story?.image_url ?? null;
       let imageUrl = currentImageUrl;
 
       if (imageFile) {
-        const newUrl = await uploadStoryImage(userId, imageFile);
-        const oldUrl = originalImageUrl ?? currentImageUrl;
-        if (oldUrl) {
-          try {
-            await deleteStoryImage(oldUrl);
-          } catch {
-            // Best-effort cleanup; update proceeds even if old image delete fails (e.g. RLS).
-          }
-        }
-        imageUrl = newUrl;
+        uploadedUrl = await uploadStoryImage(userId, imageFile);
+        imageUrl = uploadedUrl;
       } else if (originalImageUrl && !currentImageUrl) {
-        try {
-          await deleteStoryImage(originalImageUrl);
-        } catch {
-          // Best-effort cleanup.
-        }
         imageUrl = null;
       }
 
@@ -108,8 +111,29 @@ export default function StoryForm({
         if (updateError) throw updateError;
       }
 
+      if (uploadedUrl && originalImageUrl) {
+        try {
+          await deleteStoryImage(originalImageUrl);
+        } catch {
+          // Best-effort cleanup after successful save.
+        }
+      } else if (!imageFile && originalImageUrl && !currentImageUrl) {
+        try {
+          await deleteStoryImage(originalImageUrl);
+        } catch {
+          // Best-effort cleanup after successful save.
+        }
+      }
+
       onSuccess();
     } catch (err) {
+      if (uploadedUrl) {
+        try {
+          await deleteStoryImage(uploadedUrl);
+        } catch {
+          // Orphan upload cleanup.
+        }
+      }
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: string }).message)
@@ -118,11 +142,7 @@ export default function StoryForm({
             : mode === 'create'
               ? 'Submission failed.'
               : 'Update failed.';
-      const hint =
-        message.includes('teaser')
-          ? ' Run supabase/migrations/002_add_teaser_column.sql in Supabase SQL Editor.'
-          : '';
-      setError(message + hint);
+      setError(message);
     } finally {
       setSubmitting(false);
     }

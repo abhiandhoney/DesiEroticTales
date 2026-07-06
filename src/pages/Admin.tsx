@@ -8,22 +8,46 @@ import StoryReviewModal from '../components/StoryReviewModal';
 export default function Admin() {
   const [pending, setPending] = useState<Story[]>([]);
   const [allStories, setAllStories] = useState<Story[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [actionId, setActionId] = useState<string | null>(null);
   const [reviewStory, setReviewStory] = useState<Story | null>(null);
   const [feedback, setFeedback] = useState('');
 
-  useEffect(() => { fetchStories(); }, [tab]);
+  useEffect(() => {
+    fetchStories();
+  }, [tab]);
+
+  async function fetchPendingCount() {
+    const { count, error: countError } = await supabase
+      .from('stories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    if (!countError && count !== null) setPendingCount(count);
+  }
 
   async function fetchStories() {
     setLoading(true);
+    setError('');
+    fetchPendingCount();
+
     let query = supabase.from('stories').select('*').order('created_at', { ascending: false });
     if (tab === 'pending') query = query.eq('status', 'pending');
-    const { data } = await query;
-    if (data) {
-      if (tab === 'pending') setPending(data);
-      else setAllStories(data);
+    const { data, error: fetchError } = await query;
+
+    if (fetchError) {
+      setError(`Failed to load stories: ${fetchError.message}`);
+      setLoading(false);
+      return;
+    }
+
+    if (tab === 'pending') {
+      setPending(data ?? []);
+      setPendingCount(data?.length ?? 0);
+    } else {
+      setAllStories(data ?? []);
     }
     setLoading(false);
   }
@@ -31,12 +55,13 @@ export default function Admin() {
   async function updateStatus(id: string, status: StoryStatus) {
     setActionId(id);
     setFeedback('');
-    const { error } = await supabase.from('stories').update({ status }).eq('id', id);
-    if (error) {
-      setFeedback(`Failed to update: ${error.message}`);
+    const { error: updateError } = await supabase.from('stories').update({ status }).eq('id', id);
+    if (updateError) {
+      setFeedback(`Failed to update: ${updateError.message}`);
     } else {
       setPending((prev) => prev.filter((s) => s.id !== id));
       setAllStories((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
+      setPendingCount((prev) => (status !== 'pending' ? Math.max(0, prev - 1) : prev));
       setReviewStory(null);
       setFeedback(`Story ${status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'updated'}.`);
       setTimeout(() => setFeedback(''), 4000);
@@ -59,17 +84,31 @@ export default function Admin() {
         </div>
       )}
 
-      <div className="admin-tabs">
-        <button className={`tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>
-          Pending ({pending.length})
+      {error && <div className="form-error">{error}</div>}
+
+      <div className="admin-tabs" role="tablist" aria-label="Story moderation tabs">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'pending'}
+          className={`tab-btn ${tab === 'pending' ? 'active' : ''}`}
+          onClick={() => setTab('pending')}
+        >
+          Pending ({pendingCount})
         </button>
-        <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'all'}
+          className={`tab-btn ${tab === 'all' ? 'active' : ''}`}
+          onClick={() => setTab('all')}
+        >
           All Stories
         </button>
       </div>
 
       {loading ? (
-        <div className="page-loading"><div className="spinner" /></div>
+        <div className="page-loading" aria-busy="true"><div className="spinner" /></div>
       ) : stories.length === 0 ? (
         <p className="empty-state">No {tab === 'pending' ? 'pending ' : ''}stories.</p>
       ) : (

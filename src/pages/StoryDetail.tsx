@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
@@ -11,23 +11,46 @@ export default function StoryDetail() {
   const [related, setRelated] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const viewsCounted = useRef(false);
 
   useEffect(() => {
-    if (id) { fetchStory(id); incrementViews(id); }
+    if (!id) return;
+    let cancelled = false;
+    viewsCounted.current = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      const { data, error: err } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'approved')
+        .single();
+
+      if (cancelled) return;
+
+      if (err || !data) {
+        setError('Story not found or not yet approved.');
+        setLoading(false);
+        return;
+      }
+
+      setStory(data);
+      setLoading(false);
+      fetchRelated(data.category, data.id);
+
+      if (!viewsCounted.current) {
+        viewsCounted.current = true;
+        await supabase.rpc('increment_story_views', { story_id: id });
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
-
-  async function fetchStory(storyId: string) {
-    setLoading(true);
-    const { data, error: err } = await supabase.from('stories').select('*').eq('id', storyId).eq('status', 'approved').single();
-    if (err || !data) { setError('Story not found or not yet approved.'); setLoading(false); return; }
-    setStory(data);
-    fetchRelated(data.category, data.id);
-    setLoading(false);
-  }
-
-  async function incrementViews(storyId: string) {
-    await supabase.rpc('increment_story_views', { story_id: storyId });
-  }
 
   async function fetchRelated(category: string, currentId: string) {
     const { data } = await supabase.from('stories').select('*').eq('status', 'approved')
@@ -35,13 +58,22 @@ export default function StoryDetail() {
     if (data) setRelated(data);
   }
 
-  if (loading) return <div className="page-loading"><div className="spinner" /></div>;
-  if (error || !story) return (
-    <div className="page error-page">
-      <h2>{error || 'Story not found'}</h2>
-      <Link to="/stories" className="btn btn-primary">Back to stories</Link>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="page-loading" aria-busy="true">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (error || !story) {
+    return (
+      <div className="page error-page">
+        <h2>{error || 'Story not found'}</h2>
+        <Link to="/stories" className="btn btn-primary">Back to stories</Link>
+      </div>
+    );
+  }
 
   return (
     <article className="page story-detail-page">
@@ -56,7 +88,11 @@ export default function StoryDetail() {
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
       </header>
-      {story.image_url && <div className="story-hero-image"><img src={story.image_url} alt={story.title} /></div>}
+      {story.image_url && (
+        <div className="story-hero-image">
+          <img src={story.image_url} alt={story.title} />
+        </div>
+      )}
       <div className="ad-slot ad-slot-story-top" data-adsterra="story-top">{/* ADSTERRA */}</div>
       <div className="story-content">
         {story.content.split(/\n\n+/).filter(Boolean).map((para, i) => (
@@ -67,7 +103,9 @@ export default function StoryDetail() {
       {related.length > 0 && (
         <section className="related-stories">
           <h2 className="section-title">You may also like</h2>
-          <div className="stories-grid stories-grid-compact">{related.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+          <div className="stories-grid stories-grid-compact">
+            {related.map((s) => <StoryCard key={s.id} story={s} />)}
+          </div>
         </section>
       )}
     </article>

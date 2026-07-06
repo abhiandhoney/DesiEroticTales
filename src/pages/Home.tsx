@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import StoryCard from '../components/StoryCard';
@@ -6,19 +7,40 @@ import StoryFilters from '../components/StoryFilters';
 
 export default function Home() {
   const [stories, setStories] = useState<Story[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
 
-  useEffect(() => { fetchStories(); }, [category]);
+  useEffect(() => {
+    fetchStories();
+  }, [category]);
 
   async function fetchStories() {
     setLoading(true);
+    setError('');
+
+    let countQuery = supabase
+      .from('stories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved');
+    if (category) countQuery = countQuery.eq('category', category);
+
     let query = supabase.from('stories').select('*').eq('status', 'approved')
       .order('created_at', { ascending: false }).limit(24);
     if (category) query = query.eq('category', category);
-    const { data } = await query;
-    if (data) setStories(data);
+
+    const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
+
+    if (fetchError) {
+      setError('Could not load stories. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    setStories(data ?? []);
+    setTotalCount(count ?? data?.length ?? 0);
     setLoading(false);
   }
 
@@ -47,7 +69,9 @@ export default function Home() {
           Read free. Return often. Let the night unfold.
         </p>
         <div className="hero-stats">
-          <span>{stories.length}+ stories</span><span> | </span><span>Updated daily</span>
+          <span>{totalCount > 0 ? `${totalCount}+` : 'New'} stories</span>
+          <span> | </span>
+          <span>Fresh tales added regularly</span>
         </div>
       </section>
 
@@ -58,13 +82,20 @@ export default function Home() {
         onSearchChange={setSearch}
         category={category}
         onCategoryChange={setCategory}
-        searchPlaceholder="Search stories..."
+        searchPlaceholder="Search latest stories..."
       />
 
       <section className="stories-grid-section">
         <h2 className="section-title">Latest Tales</h2>
-        {loading ? (
-          <div className="page-loading"><div className="spinner" /></div>
+        {error ? (
+          <div className="empty-state">
+            <p>{error}</p>
+            <button type="button" className="btn btn-ghost empty-state-action" onClick={fetchStories}>
+              Retry
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="page-loading" aria-busy="true"><div className="spinner" /></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             {search.trim() || category ? (
@@ -79,11 +110,19 @@ export default function Home() {
                 </button>
               </>
             ) : (
-              <p>No stories yet. Check back soon - new tales are brewing.</p>
+              <p>No stories yet. Check back soon — new tales are brewing.</p>
             )}
           </div>
         ) : (
-          <div className="stories-grid">{filtered.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+          <>
+            {search.trim() && (
+              <p className="search-hint">
+                Showing matches from the latest {stories.length} stories.{' '}
+                <Link to="/stories">Browse all stories</Link> for the full library.
+              </p>
+            )}
+            <div className="stories-grid">{filtered.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+          </>
         )}
       </section>
     </div>

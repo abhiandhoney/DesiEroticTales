@@ -12,6 +12,7 @@ export default function Submit() {
   const [success, setSuccess] = useState(false);
   const [myStories, setMyStories] = useState<Story[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
+  const [storiesError, setStoriesError] = useState('');
 
   useEffect(() => {
     if (user) fetchMyStories();
@@ -20,18 +21,23 @@ export default function Submit() {
   async function fetchMyStories() {
     if (!user) return;
     setLoadingStories(true);
-    const { data } = await supabase
+    setStoriesError('');
+    const { data, error } = await supabase
       .from('stories')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    if (data) setMyStories(data);
+    if (error) {
+      setStoriesError('Could not load your submissions.');
+    } else {
+      setMyStories(data ?? []);
+    }
     setLoadingStories(false);
   }
 
   function handleCreateSuccess() {
     setSuccess(true);
-    setTimeout(() => navigate('/stories'), 2500);
+    setTimeout(() => navigate('/submit'), 2500);
   }
 
   if (success) {
@@ -40,6 +46,9 @@ export default function Submit() {
         <div className="success-message">
           <h2>Story submitted!</h2>
           <p>Your tale is pending review. We'll notify you once it's live.</p>
+          <Link to="/submit" className="btn btn-ghost success-action">
+            Back to submissions
+          </Link>
         </div>
       </div>
     );
@@ -58,39 +67,44 @@ export default function Submit() {
         </p>
       </header>
 
-      {user && (
-        <section className="my-submissions">
-          <h2 className="section-title">My Submissions</h2>
-          {loadingStories ? (
-            <div className="page-loading page-loading-inline">
-              <div className="spinner" />
-            </div>
-          ) : myStories.length === 0 ? (
-            <p className="empty-state-inline">You haven't submitted any stories yet.</p>
-          ) : (
-            <div className="my-submissions-list">
-              {myStories.map((story) => (
-                <article key={story.id} className="my-submission-card">
-                  <div className="my-submission-header">
-                    <h3 className="my-submission-title">{story.title}</h3>
-                    <span className={`status-badge status-${story.status}`}>{story.status}</span>
-                  </div>
-                  <p className="my-submission-meta">
-                    {story.category} &middot;{' '}
-                    {new Date(story.created_at).toLocaleDateString()}
-                  </p>
-                  <p className="my-submission-preview">{getStoryTeaser(story, 120)}</p>
-                  {story.status === 'pending' && (
-                    <Link to={`/edit/${story.id}`} className="btn btn-primary btn-sm">
-                      Edit
-                    </Link>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+      <section className="my-submissions">
+        <h2 className="section-title">My Submissions</h2>
+        {loadingStories ? (
+          <div className="page-loading page-loading-inline" aria-busy="true">
+            <div className="spinner" />
+          </div>
+        ) : storiesError ? (
+          <div className="empty-state-inline">
+            <p>{storiesError}</p>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={fetchMyStories}>
+              Retry
+            </button>
+          </div>
+        ) : myStories.length === 0 ? (
+          <p className="empty-state-inline">You haven't submitted any stories yet.</p>
+        ) : (
+          <div className="my-submissions-list">
+            {myStories.map((story) => (
+              <article key={story.id} className="my-submission-card">
+                <div className="my-submission-header">
+                  <h3 className="my-submission-title">{story.title}</h3>
+                  <span className={`status-badge status-${story.status}`}>{story.status}</span>
+                </div>
+                <p className="my-submission-meta">
+                  {story.category} &middot;{' '}
+                  {new Date(story.created_at).toLocaleDateString()}
+                </p>
+                <p className="my-submission-preview">{getStoryTeaser(story, 120)}</p>
+                {story.status === 'pending' && (
+                  <Link to={`/edit/${story.id}`} className="btn btn-primary btn-sm">
+                    Edit
+                  </Link>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <StoryForm
         mode="create"

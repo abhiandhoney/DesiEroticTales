@@ -7,21 +7,30 @@ import StoryFilters from '../components/StoryFilters';
 export default function Stories() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState<'newest' | 'popular'>('newest');
 
-  useEffect(() => { fetchStories(); }, [category, sort]);
+  useEffect(() => {
+    fetchStories();
+  }, [category, sort]);
 
   async function fetchStories() {
     setLoading(true);
+    setError('');
     let query = supabase.from('stories').select('*').eq('status', 'approved');
     if (category) query = query.eq('category', category);
     query = sort === 'popular'
       ? query.order('views', { ascending: false })
       : query.order('created_at', { ascending: false });
-    const { data } = await query;
-    if (data) setStories(data);
+    const { data, error: fetchError } = await query;
+    if (fetchError) {
+      setError('Could not load stories. Please try again.');
+      setLoading(false);
+      return;
+    }
+    setStories(data ?? []);
     setLoading(false);
   }
 
@@ -31,7 +40,8 @@ export default function Stories() {
     return (
       s.title.toLowerCase().includes(q) ||
       (s.teaser?.toLowerCase().includes(q) ?? false) ||
-      s.content.toLowerCase().includes(q)
+      s.content.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q)
     );
   });
 
@@ -56,8 +66,15 @@ export default function Stories() {
 
       <div className="ad-slot ad-slot-inline" data-adsterra="stories-list">{/* ADSTERRA */}</div>
 
-      {loading ? (
-        <div className="page-loading"><div className="spinner" /></div>
+      {error ? (
+        <div className="empty-state">
+          <p>{error}</p>
+          <button type="button" className="btn btn-ghost empty-state-action" onClick={fetchStories}>
+            Retry
+          </button>
+        </div>
+      ) : loading ? (
+        <div className="page-loading" aria-busy="true"><div className="spinner" /></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <p>No stories match your search or filter.</p>

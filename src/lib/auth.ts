@@ -2,20 +2,36 @@ import { supabase } from './supabase';
 import { getAuthRedirectUrl } from './site';
 
 export const AUTH_RETURN_KEY = 'desierotictales_auth_return';
-export const AUTH_CALLBACK_PATH = '/auth/callback';
 const PKCE_HANDLED_KEY = 'desierotictales_pkce_handled';
+
+function routerBase(): string {
+  return import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '');
+}
+
+export function getAuthCallbackPath(): string {
+  return `${routerBase()}/auth/callback`;
+}
 
 export function isAuthCallbackRoute(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.location.pathname === AUTH_CALLBACK_PATH;
+  return window.location.pathname === getAuthCallbackPath();
+}
+
+function isGenericReturnPath(path: string): boolean {
+  return path === '/' || path === '';
 }
 
 export function storeAuthReturnPath(path?: string): void {
   if (typeof window === 'undefined') return;
+  const callbackPath = getAuthCallbackPath();
   const next =
     path ??
-    `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (next.startsWith(AUTH_CALLBACK_PATH)) return;
+    `${window.location.pathname}${window.location.search}`;
+  if (next.startsWith(callbackPath)) return;
+
+  const existing = sessionStorage.getItem(AUTH_RETURN_KEY);
+  if (existing && !isGenericReturnPath(existing) && isGenericReturnPath(next)) return;
+
   sessionStorage.setItem(AUTH_RETURN_KEY, next);
 }
 
@@ -28,7 +44,7 @@ export function consumeAuthReturnPath(): string {
 }
 
 export function getOAuthCallbackUrl(): string {
-  return getAuthRedirectUrl(AUTH_CALLBACK_PATH);
+  return getAuthRedirectUrl(getAuthCallbackPath());
 }
 
 export function parseAuthErrorFromUrl(): string | null {
@@ -45,10 +61,10 @@ export function parseAuthErrorFromUrl(): string | null {
 
 export function clearAuthParamsFromUrl(): void {
   if (typeof window === 'undefined') return;
-  window.history.replaceState({}, document.title, AUTH_CALLBACK_PATH);
+  window.history.replaceState({}, document.title, getAuthCallbackPath());
 }
 
-/** Run once on /auth/callback before the app mounts — avoids PKCE verifier races. */
+/** Run once on /auth/callback before React mounts — avoids PKCE verifier races. */
 export async function completeOAuthCallback(): Promise<{ error?: string }> {
   if (!isAuthCallbackRoute()) return {};
 

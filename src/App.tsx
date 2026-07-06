@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './hooks/useAuth';
 import MainLayout from './components/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -15,19 +16,21 @@ const routerBasename =
 
 export default function App() {
   return (
-    <BrowserRouter basename={routerBasename}>
-      <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/stories" element={<Stories />} />
-          <Route path="/story/:id" element={<StoryDetail />} />
-          <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
-          <Route path="/edit/:id" element={<ProtectedRoute requireWriter><EditStory /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter basename={routerBasename}>
+        <Routes>
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/stories" element={<Stories />} />
+            <Route path="/story/:id" element={<StoryDetail />} />
+            <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
+            <Route path="/edit/:id" element={<ProtectedRoute requireWriter><EditStory /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, signInWithGoogle, signOut } from '../hooks/useAuth';
 
@@ -6,9 +6,28 @@ export default function Navbar() {
   const { user, profile, loading, isAdmin, isWriter } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState('');
 
-  const isActive = (path: string) =>
-    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+  useEffect(() => {
+    setMenuOpen(false);
+    setAuthError('');
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path === '/stories') {
+      return location.pathname === '/stories' || location.pathname.startsWith('/story/');
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   const navLink = (path: string, label: string) => (
     <Link
@@ -19,6 +38,27 @@ export default function Navbar() {
       {label}
     </Link>
   );
+
+  async function handleSignIn() {
+    setSigningIn(true);
+    setAuthError('');
+    try {
+      await signInWithGoogle(`${location.pathname}${location.search}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
+      setAuthError(message);
+      setSigningIn(false);
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+      setMenuOpen(false);
+    } catch {
+      setAuthError('Sign-out failed. Please try again.');
+    }
+  }
 
   return (
     <nav className="navbar">
@@ -39,6 +79,15 @@ export default function Navbar() {
           {menuOpen ? '\u00d7' : '\u2630'}
         </button>
 
+        {menuOpen && (
+          <button
+            type="button"
+            className="navbar-backdrop"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+
         <div className={`navbar-menu ${menuOpen ? 'open' : ''}`}>
           <div className="navbar-links">
             {navLink('/', 'Home')}
@@ -48,21 +97,26 @@ export default function Navbar() {
           </div>
           <div className="navbar-auth">
             {loading ? (
-              <span className="auth-loading">...</span>
+              <span className="auth-loading" aria-live="polite">Loading...</span>
             ) : user ? (
               <div className="user-menu">
                 <span className="user-name">{profile?.username ?? user.email?.split('@')[0]}</span>
-                <button className="btn btn-sm btn-ghost" onClick={() => { signOut(); setMenuOpen(false); }}>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={handleSignOut}>
                   Sign out
                 </button>
               </div>
             ) : (
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => signInWithGoogle(`${location.pathname}${location.search}`)}
-              >
-                Sign in with Google
-              </button>
+              <div className="navbar-signin">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={handleSignIn}
+                  disabled={signingIn}
+                >
+                  {signingIn ? 'Redirecting...' : 'Sign in with Google'}
+                </button>
+                {authError && <p className="navbar-auth-error">{authError}</p>}
+              </div>
             )}
           </div>
         </div>

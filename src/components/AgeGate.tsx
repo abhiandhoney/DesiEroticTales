@@ -1,21 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const STORAGE_KEY = 'desierotictales_age_verified';
 
 export default function AgeGate() {
   const [visible, setVisible] = useState(false);
+  const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
   }, []);
 
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    confirmRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [visible]);
+
   if (!visible) return null;
 
+  function confirm() {
+    localStorage.setItem(STORAGE_KEY, 'true');
+    setVisible(false);
+  }
+
   return (
-    <div className="age-gate-overlay">
-      <div className="age-gate-modal">
+    <div className="age-gate-overlay" role="presentation">
+      <div
+        className="age-gate-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="age-gate-title"
+      >
         <div className="age-gate-icon" aria-hidden="true">18+</div>
-        <h2>
+        <h2 id="age-gate-title">
           <span className="telugu-text" lang="te" title="Age verification">వయస్సు నిర్ధారణ</span>
           {' '}| Age Verification
         </h2>
@@ -28,10 +49,19 @@ export default function AgeGate() {
         </p>
         <p className="age-gate-question">Are you 18 years or older?</p>
         <div className="age-gate-actions">
-          <button className="btn btn-primary" onClick={() => { localStorage.setItem(STORAGE_KEY, 'true'); setVisible(false); }}>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="btn btn-primary"
+            onClick={confirm}
+          >
             Yes, I am 18+
           </button>
-          <button className="btn btn-ghost" onClick={() => { window.location.href = 'https://www.google.com'; }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => { window.location.href = 'https://www.google.com'; }}
+          >
             No, leave
           </button>
         </div>
