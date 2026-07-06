@@ -10,6 +10,7 @@ import Submit from './pages/Submit';
 import EditStory from './pages/EditStory';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import AuthCallback from './pages/AuthCallback';
 
 const routerBasename =
   import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -22,6 +23,7 @@ export default function App() {
         <Navbar />
         <main className="main-content">
           <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<Home />} />
             <Route path="/stories" element={<Stories />} />
             <Route path="/story/:id" element={<StoryDetail />} />

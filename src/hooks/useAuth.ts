@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+import { getOAuthCallbackUrl, storeAuthReturnPath } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import { getAuthRedirectUrl } from '../lib/site';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL ?? '';
 import type { Profile } from '../types';
@@ -54,10 +54,15 @@ export function useAuth(): AuthState {
   return { user, session, profile, loading, isAdmin, isWriter };
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(returnPath?: string) {
+  storeAuthReturnPath(returnPath);
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: getAuthRedirectUrl('/') },
+    options: {
+      redirectTo: getOAuthCallbackUrl(),
+      queryParams: { prompt: 'select_account' },
+    },
   });
   if (error) throw error;
 }

@@ -54,7 +54,10 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <button className="btn btn-sm btn-primary" onClick={() => signInWithGoogle()}>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => signInWithGoogle(`${location.pathname}${location.search}`)}
+              >
                 Sign in with Google
               </button>
             )}
