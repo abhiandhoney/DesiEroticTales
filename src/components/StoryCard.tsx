@@ -1,10 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Story } from '../types';
-
-function getTeaser(content: string, maxLen = 120): string {
-  const plain = content.replace(/\s+/g, ' ').trim();
-  return plain.length > maxLen ? plain.slice(0, maxLen) + '…' : plain;
-}
+import { getStoryTeaser } from '../lib/storyTeaser';
 
 export default function StoryCard({ story }: { story: Story }) {
   return (
@@ -17,7 +13,7 @@ export default function StoryCard({ story }: { story: Story }) {
       <div className="story-card-body">
         <span className="story-category">{story.category}</span>
         <h3 className="story-title">{story.title}</h3>
-        <p className="story-teaser">{getTeaser(story.content)}</p>
+        <p className="story-teaser">{getStoryTeaser(story)}</p>
         <div className="story-meta">
           <span className="story-views">{story.views.toLocaleString()} reads</span>
         </div>

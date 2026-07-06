@@ -14,12 +14,17 @@ export default function AgeGate() {
   return (
     <div className="age-gate-overlay">
       <div className="age-gate-modal">
-        <div className="age-gate-icon">🔞</div>
-        <h2>వయస్సు నిర్ధారణ · Age Verification</h2>
+        <div className="age-gate-icon" aria-hidden="true">18+</div>
+        <h2>
+          <span className="telugu-text" lang="te" title="Age verification">వయస్సు నిర్ధారణ</span>
+          {' '}| Age Verification
+        </h2>
         <p>
           DesiEroticTales contains mature content intended for adults only.
           <br />
-          <span className="telugu-text">ఈ వెబ్‌సైట్‌లో పెద్దలకు మాత్రమే అనుకూలమైన కథలు ఉన్నాయి.</span>
+          <span className="telugu-text" lang="te" title="This site contains adult-only stories">
+            ఈ వెబ్‌సైట్‌లో పెద్దలకు మాత్రమే అనుకూలమైన కథలు ఉన్నాయి.
+          </span>
         </p>
         <p className="age-gate-question">Are you 18 years or older?</p>
         <div className="age-gate-actions">

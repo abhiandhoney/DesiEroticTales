@@ -14,7 +14,7 @@
 ```
 VITE_SUPABASE_URL=https://totwotuotvhpwturwgkc.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_1bouZE0Nz3MVLiQmH4hW8Q_obbNmhAl
-VITE_ADMIN_EMAIL=owner@gmail.com
+VITE_ADMIN_EMAIL=abhi.and.honey@gmail.com
 ```
 
 ### SPA routing

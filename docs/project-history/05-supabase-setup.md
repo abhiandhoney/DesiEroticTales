@@ -65,5 +65,5 @@ Run in **Supabase Dashboard → SQL Editor** (or `supabase db push` if CLI linke
 4. Promote admin after first login:
    ```sql
    UPDATE profiles SET role = 'admin'
-   WHERE id = (SELECT id FROM auth.users WHERE email = 'your@gmail.com');
+   WHERE id = (SELECT id FROM auth.users WHERE email = 'abhi.and.honey@gmail.com');
    ```

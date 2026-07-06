@@ -46,12 +46,13 @@ export default function StoryDetail() {
   return (
     <article className="page story-detail-page">
       <ReadingProgress />
+      <Link to="/stories" className="story-back-link">&larr; Back to all stories</Link>
       <header className="story-header">
         <span className="story-category">{story.category}</span>
         <h1 className="story-detail-title">{story.title}</h1>
         <div className="story-detail-meta">
           <span>{story.views.toLocaleString()} reads</span>
-          <span>·</span>
+          <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
       </header>

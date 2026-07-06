@@ -8,9 +8,12 @@ export interface Profile {
   created_at: string;
 }
 
+export const TEASER_MAX_LENGTH = 250;
+
 export interface Story {
   id: string;
   title: string;
+  teaser: string | null;
   content: string;
   category: string;
   status: StoryStatus;

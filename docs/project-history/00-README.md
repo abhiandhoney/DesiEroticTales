@@ -31,6 +31,7 @@
 | [11-folder-structure.md](./11-folder-structure.md) | Full file tree explained |
 | [12-environment-variables.md](./12-environment-variables.md) | `.env` keys and where used |
 | [13-vboxsf-npm-fix.md](./13-vboxsf-npm-fix.md) | **npm EPERM/symlink fix for X_DRIVE** |
+| [14-status-report.md](./14-status-report.md) | **Full honest project status report** |
 
 ## First commands for a new agent
 
@@ -45,6 +46,6 @@ npm run build        # outputs dist/ for Cloudflare Pages
 
 1. **Supabase SQL migration** — run `supabase/migrations/001_initial_schema.sql` in dashboard if not done
 2. **Google OAuth** — enable in Supabase Auth providers
-3. **Admin email** — set `VITE_ADMIN_EMAIL` in `.env` to owner's real Gmail
+3. **Admin email** — `abhi.and.honey@gmail.com` (set in Cloudflare Build vars too)
 4. **Cloudflare tunnel credentials** — `~/.cloudflared/*.json` was missing last check
 5. **GitHub push** — commits exist locally; push attempted multiple times; user logged into `gh` CLI

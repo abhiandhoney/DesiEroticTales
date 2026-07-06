@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
-import { STORY_CATEGORIES } from '../types';
 import StoryCard from '../components/StoryCard';
+import StoryFilters from '../components/StoryFilters';
 
 export default function Home() {
   const [stories, setStories] = useState<Story[]>([]);
@@ -25,7 +25,12 @@ export default function Home() {
   const filtered = stories.filter((s) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    return s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+    return (
+      s.title.toLowerCase().includes(q) ||
+      (s.teaser?.toLowerCase().includes(q) ?? false) ||
+      s.content.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -33,7 +38,8 @@ export default function Home() {
       <section className="hero">
         <div className="hero-glow" />
         <h1 className="hero-title">
-          <span className="telugu-text">రహస్య కథలు</span><br />
+          <span className="telugu-text" lang="te" title="Secret stories">రహస్య కథలు</span>
+          <span className="hero-telugu-meaning">Secret Stories</span><br />
           Stories that whisper after dark
         </h1>
         <p className="hero-subtitle">
@@ -41,28 +47,41 @@ export default function Home() {
           Read free. Return often. Let the night unfold.
         </p>
         <div className="hero-stats">
-          <span>{stories.length}+ stories</span><span>·</span><span>Updated daily</span>
+          <span>{stories.length}+ stories</span><span> | </span><span>Updated daily</span>
         </div>
       </section>
 
       <div className="ad-slot ad-slot-top" data-adsterra="top-banner">{/* ADSTERRA */}</div>
 
-      <section className="filters-section">
-        <input type="search" placeholder="Search stories…" value={search} onChange={(e) => setSearch(e.target.value)} className="input" />
-        <div className="category-filters">
-          <button className={`filter-chip ${category === '' ? 'active' : ''}`} onClick={() => setCategory('')}>All</button>
-          {STORY_CATEGORIES.map((cat) => (
-            <button key={cat} className={`filter-chip ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)}>{cat}</button>
-          ))}
-        </div>
-      </section>
+      <StoryFilters
+        search={search}
+        onSearchChange={setSearch}
+        category={category}
+        onCategoryChange={setCategory}
+        searchPlaceholder="Search stories..."
+      />
 
       <section className="stories-grid-section">
         <h2 className="section-title">Latest Tales</h2>
         {loading ? (
           <div className="page-loading"><div className="spinner" /></div>
         ) : filtered.length === 0 ? (
-          <p className="empty-state">No stories found. Check back soon — new tales are brewing.</p>
+          <div className="empty-state">
+            {search.trim() || category ? (
+              <>
+                <p>No stories match your search or filter.</p>
+                <button
+                  type="button"
+                  className="btn btn-ghost empty-state-action"
+                  onClick={() => { setSearch(''); setCategory(''); }}
+                >
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <p>No stories yet. Check back soon - new tales are brewing.</p>
+            )}
+          </div>
         ) : (
           <div className="stories-grid">{filtered.map((s) => <StoryCard key={s.id} story={s} />)}</div>
         )}

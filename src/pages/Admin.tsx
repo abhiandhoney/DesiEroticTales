@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Story, StoryStatus } from '../types';
+import { getStoryTeaser } from '../lib/storyTeaser';
+import StoryReviewModal from '../components/StoryReviewModal';
 
 export default function Admin() {
   const [pending, setPending] = useState<Story[]>([]);
@@ -8,6 +10,8 @@ export default function Admin() {
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [reviewStory, setReviewStory] = useState<Story | null>(null);
+  const [feedback, setFeedback] = useState('');
 
   useEffect(() => { fetchStories(); }, [tab]);
 
@@ -16,16 +20,25 @@ export default function Admin() {
     let query = supabase.from('stories').select('*').order('created_at', { ascending: false });
     if (tab === 'pending') query = query.eq('status', 'pending');
     const { data } = await query;
-    if (data) { if (tab === 'pending') setPending(data); else setAllStories(data); }
+    if (data) {
+      if (tab === 'pending') setPending(data);
+      else setAllStories(data);
+    }
     setLoading(false);
   }
 
   async function updateStatus(id: string, status: StoryStatus) {
     setActionId(id);
+    setFeedback('');
     const { error } = await supabase.from('stories').update({ status }).eq('id', id);
-    if (!error) {
+    if (error) {
+      setFeedback(`Failed to update: ${error.message}`);
+    } else {
       setPending((prev) => prev.filter((s) => s.id !== id));
       setAllStories((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
+      setReviewStory(null);
+      setFeedback(`Story ${status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'updated'}.`);
+      setTimeout(() => setFeedback(''), 4000);
     }
     setActionId(null);
   }
@@ -36,48 +49,60 @@ export default function Admin() {
     <div className="page admin-page">
       <header className="page-header">
         <h1>Moderation Panel</h1>
-        <p className="page-subtitle">Approve or reject submitted stories</p>
+        <p className="page-subtitle">Review each story in full before approving or rejecting</p>
       </header>
+
+      {feedback && (
+        <div className={`admin-feedback ${feedback.startsWith('Failed') ? 'admin-feedback-error' : ''}`}>
+          {feedback}
+        </div>
+      )}
+
       <div className="admin-tabs">
-        <button className={`tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>Pending ({pending.length})</button>
-        <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>All Stories</button>
+        <button className={`tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>
+          Pending ({pending.length})
+        </button>
+        <button className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+          All Stories
+        </button>
       </div>
+
       {loading ? (
         <div className="page-loading"><div className="spinner" /></div>
       ) : stories.length === 0 ? (
         <p className="empty-state">No {tab === 'pending' ? 'pending ' : ''}stories.</p>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr><th>Title</th><th>Category</th><th>Status</th><th>Date</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-              {stories.map((story) => (
-                <tr key={story.id}>
-                  <td><strong>{story.title}</strong><p className="admin-preview">{story.content.slice(0, 100)}…</p></td>
-                  <td>{story.category}</td>
-                  <td><span className={`status-badge status-${story.status}`}>{story.status}</span></td>
-                  <td>{new Date(story.created_at).toLocaleDateString()}</td>
-                  <td className="admin-actions">
-                    {story.status === 'pending' && (
-                      <>
-                        <button className="btn btn-sm btn-success" disabled={actionId === story.id} onClick={() => updateStatus(story.id, 'approved')}>Approve</button>
-                        <button className="btn btn-sm btn-danger" disabled={actionId === story.id} onClick={() => updateStatus(story.id, 'rejected')}>Reject</button>
-                      </>
-                    )}
-                    {story.status === 'approved' && (
-                      <button className="btn btn-sm btn-danger" disabled={actionId === story.id} onClick={() => updateStatus(story.id, 'rejected')}>Unpublish</button>
-                    )}
-                    {story.status === 'rejected' && (
-                      <button className="btn btn-sm btn-success" disabled={actionId === story.id} onClick={() => updateStatus(story.id, 'approved')}>Approve</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="admin-cards">
+          {stories.map((story) => (
+            <article key={story.id} className="admin-card">
+              <div className="admin-card-header">
+                <span className={`status-badge status-${story.status}`}>{story.status}</span>
+                <span className="admin-card-date">
+                  {new Date(story.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <h3 className="admin-card-title">{story.title}</h3>
+              <p className="admin-card-category">{story.category}</p>
+              <p className="admin-preview">{getStoryTeaser(story, 160)}</p>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm admin-review-btn"
+                onClick={() => setReviewStory(story)}
+              >
+                Read &amp; moderate
+              </button>
+            </article>
+          ))}
         </div>
+      )}
+
+      {reviewStory && (
+        <StoryReviewModal
+          story={reviewStory}
+          onClose={() => setReviewStory(null)}
+          onUpdateStatus={updateStatus}
+          actionLoading={actionId === reviewStory.id}
+        />
       )}
     </div>
   );
