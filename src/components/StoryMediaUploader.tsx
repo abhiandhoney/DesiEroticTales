@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { convertFileToWebP } from '../lib/imageProcessing';
 import ImageCropModal from './ImageCropModal';
 
 export const MAX_STORY_IMAGES = 8;
 
 export interface MediaUploadState {
-  coverBlob: Blob | null;
-  coverDisplayUrl: string | null;
-  persistedCoverUrl: string | null;
+  coverFullBlob: Blob | null;
+  coverCardBlob: Blob | null;
+  coverCardDisplayUrl: string | null;
+  persistedFullCoverUrl: string | null;
+  persistedCardCoverUrl: string | null;
   persistedGalleryUrls: string[];
   pendingGalleryFiles: File[];
   removedUrls: string[];
@@ -14,6 +17,7 @@ export interface MediaUploadState {
 
 interface StoryMediaUploaderProps {
   initialCoverUrl: string | null;
+  initialCardUrl?: string | null;
   initialGalleryUrls: string[];
   onChange: (state: MediaUploadState) => void;
   disabled?: boolean;
@@ -28,52 +32,62 @@ interface LocalDraft {
   file: File;
   previewUrl: string;
   isCover: boolean;
-  croppedBlob: Blob | null;
-  croppedPreviewUrl: string | null;
+  fullBlob: Blob | null;
+  cardBlob: Blob | null;
+  cardPreviewUrl: string | null;
 }
 
 type CropTarget =
   | { kind: 'draft'; draft: LocalDraft }
-  | { kind: 'persisted'; url: string };
+  | { kind: 'persisted-full'; url: string };
 
 export default function StoryMediaUploader({
   initialCoverUrl,
+  initialCardUrl = null,
   initialGalleryUrls,
   onChange,
   disabled = false,
 }: StoryMediaUploaderProps) {
-  const [persistedCover, setPersistedCover] = useState<string | null>(initialCoverUrl);
+  const [persistedFull, setPersistedFull] = useState<string | null>(initialCoverUrl);
+  const [persistedCard, setPersistedCard] = useState<string | null>(initialCardUrl ?? initialCoverUrl);
   const [persistedGallery, setPersistedGallery] = useState<string[]>(initialGalleryUrls);
   const [removedUrls, setRemovedUrls] = useState<string[]>([]);
   const [drafts, setDrafts] = useState<LocalDraft[]>([]);
-  const [coverBlob, setCoverBlob] = useState<Blob | null>(null);
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [coverFullBlob, setCoverFullBlob] = useState<Blob | null>(null);
+  const [coverCardBlob, setCoverCardBlob] = useState<Blob | null>(null);
+  const [coverCardPreviewUrl, setCoverCardPreviewUrl] = useState<string | null>(null);
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setPersistedCover(initialCoverUrl);
+    setPersistedFull(initialCoverUrl);
+    setPersistedCard(initialCardUrl ?? initialCoverUrl);
     setPersistedGallery(initialGalleryUrls);
     setRemovedUrls([]);
     setDrafts([]);
-    setCoverBlob(null);
-    setCoverPreviewUrl(null);
-  }, [initialCoverUrl, initialGalleryUrls]);
+    setCoverFullBlob(null);
+    setCoverCardBlob(null);
+    setCoverCardPreviewUrl(null);
+  }, [initialCoverUrl, initialCardUrl, initialGalleryUrls]);
 
   function buildState(
-    cover: string | null,
+    fullUrl: string | null,
+    cardUrl: string | null,
     gallery: string[],
     removed: string[],
     localDrafts: LocalDraft[],
-    blob: Blob | null,
-    previewUrl: string | null,
+    fullBlob: Blob | null,
+    cardBlob: Blob | null,
+    cardPreview: string | null,
   ): MediaUploadState {
     const coverDraft = localDrafts.find((d) => d.isCover);
     return {
-      coverBlob: blob,
-      coverDisplayUrl: previewUrl ?? coverDraft?.croppedPreviewUrl ?? cover,
-      persistedCoverUrl: blob || coverDraft ? null : cover,
+      coverFullBlob: fullBlob ?? coverDraft?.fullBlob ?? null,
+      coverCardBlob: cardBlob ?? coverDraft?.cardBlob ?? null,
+      coverCardDisplayUrl: cardPreview ?? coverDraft?.cardPreviewUrl ?? cardUrl ?? fullUrl,
+      persistedFullCoverUrl: fullBlob || coverDraft ? null : fullUrl,
+      persistedCardCoverUrl: cardBlob || coverDraft ? null : cardUrl,
       persistedGalleryUrls: gallery,
       pendingGalleryFiles: localDrafts.filter((d) => !d.isCover).map((d) => d.file),
       removedUrls: removed,
@@ -81,20 +95,22 @@ export default function StoryMediaUploader({
   }
 
   function emit(
-    cover = persistedCover,
+    fullUrl = persistedFull,
+    cardUrl = persistedCard,
     gallery = persistedGallery,
     removed = removedUrls,
     localDrafts = drafts,
-    blob = coverBlob,
-    previewUrl = coverPreviewUrl,
+    fullBlob = coverFullBlob,
+    cardBlob = coverCardBlob,
+    cardPreview = coverCardPreviewUrl,
   ) {
-    onChange(buildState(cover, gallery, removed, localDrafts, blob, previewUrl));
+    onChange(buildState(fullUrl, cardUrl, gallery, removed, localDrafts, fullBlob, cardBlob, cardPreview));
   }
 
   const totalCount =
     drafts.length +
-    (persistedCover ? 1 : 0) +
-    persistedGallery.filter((u) => u !== persistedCover).length;
+    (persistedFull ? 1 : 0) +
+    persistedGallery.filter((u) => u !== persistedFull).length;
 
   function handleFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -105,125 +121,130 @@ export default function StoryMediaUploader({
       return;
     }
 
-    const needsCover = !persistedCover && !coverBlob && !drafts.some((d) => d.isCover);
+    const needsCover = !persistedFull && !coverFullBlob && !drafts.some((d) => d.isCover);
     const picked = Array.from(files).slice(0, remaining);
     const newDrafts: LocalDraft[] = picked.map((file, i) => ({
       id: makeId(),
       file,
       previewUrl: URL.createObjectURL(file),
       isCover: needsCover && i === 0,
-      croppedBlob: null,
-      croppedPreviewUrl: null,
+      fullBlob: null,
+      cardBlob: null,
+      cardPreviewUrl: null,
     }));
 
     const next = [...drafts, ...newDrafts];
     setDrafts(next);
 
     const coverDraft = newDrafts.find((d) => d.isCover) ?? newDrafts[0];
-    if (coverDraft && !coverDraft.croppedBlob) {
+    if (coverDraft && !coverDraft.cardBlob) {
       setCropTarget({ kind: 'draft', draft: coverDraft });
     }
-    emit(persistedCover, persistedGallery, removedUrls, next, coverBlob, coverPreviewUrl);
+    emit(persistedFull, persistedCard, persistedGallery, removedUrls, next, coverFullBlob, coverCardBlob, coverCardPreviewUrl);
   }
 
   function setPersistedAsCover(url: string) {
-    if (url === persistedCover && !coverBlob) return;
-    const oldCover = persistedCover;
+    if (url === persistedFull && !coverFullBlob) return;
+    const oldFull = persistedFull;
     let newGallery = persistedGallery.filter((u) => u !== url);
-    if (oldCover && oldCover !== url) {
-      newGallery = [oldCover, ...newGallery.filter((u) => u !== oldCover)];
+    if (oldFull && oldFull !== url) {
+      newGallery = [oldFull, ...newGallery.filter((u) => u !== oldFull)];
     }
     const clearedDrafts = drafts.map((d) => ({ ...d, isCover: false }));
-    setPersistedCover(url);
-    setPersistedGallery(newGallery);
-    setCoverBlob(null);
-    setCoverPreviewUrl(null);
+    setPersistedFull(url);
+    setPersistedCard(url);
+    setCoverFullBlob(null);
+    setCoverCardBlob(null);
+    setCoverCardPreviewUrl(null);
     setDrafts(clearedDrafts);
-    emit(url, newGallery, removedUrls, clearedDrafts, null, null);
+    emit(url, url, newGallery, removedUrls, clearedDrafts, null, null, null);
   }
 
   function setAsCover(id: string) {
     const target = drafts.find((d) => d.id === id);
     if (!target) return;
-    if (!target.croppedBlob) {
+    if (!target.cardBlob) {
       setCropTarget({ kind: 'draft', draft: target });
       const next = drafts.map((d) => ({ ...d, isCover: d.id === id }));
       setDrafts(next);
-      setPersistedCover(null);
-      setCoverBlob(null);
-      setCoverPreviewUrl(null);
-      emit(null, persistedGallery, removedUrls, next, null, null);
+      setPersistedFull(null);
+      setPersistedCard(null);
+      setCoverFullBlob(null);
+      setCoverCardBlob(null);
+      setCoverCardPreviewUrl(null);
+      emit(null, null, persistedGallery, removedUrls, next, null, null, null);
       return;
     }
     const next = drafts.map((d) => ({ ...d, isCover: d.id === id }));
     setDrafts(next);
-    setCoverBlob(target.croppedBlob);
-    setCoverPreviewUrl(target.croppedPreviewUrl);
-    setPersistedCover(null);
-    emit(null, persistedGallery, removedUrls, next, target.croppedBlob, target.croppedPreviewUrl);
+    setCoverFullBlob(target.fullBlob);
+    setCoverCardBlob(target.cardBlob);
+    setCoverCardPreviewUrl(target.cardPreviewUrl);
+    setPersistedFull(null);
+    setPersistedCard(null);
+    emit(null, null, persistedGallery, removedUrls, next, target.fullBlob, target.cardBlob, target.cardPreviewUrl);
   }
 
   function removeDraft(id: string) {
     const removed = drafts.find((d) => d.id === id);
     if (removed) {
       URL.revokeObjectURL(removed.previewUrl);
-      if (removed.croppedPreviewUrl) URL.revokeObjectURL(removed.croppedPreviewUrl);
+      if (removed.cardPreviewUrl) URL.revokeObjectURL(removed.cardPreviewUrl);
     }
     const next = drafts.filter((d) => d.id !== id);
     setDrafts(next);
     const coverDraft = next.find((d) => d.isCover);
-    const blob = coverDraft?.croppedBlob ?? null;
-    const preview = coverDraft?.croppedPreviewUrl ?? null;
-    setCoverBlob(blob);
-    setCoverPreviewUrl(preview);
-    emit(persistedCover, persistedGallery, removedUrls, next, blob, preview);
+    setCoverFullBlob(coverDraft?.fullBlob ?? null);
+    setCoverCardBlob(coverDraft?.cardBlob ?? null);
+    setCoverCardPreviewUrl(coverDraft?.cardPreviewUrl ?? null);
+    emit(persistedFull, persistedCard, persistedGallery, removedUrls, next, coverDraft?.fullBlob ?? null, coverDraft?.cardBlob ?? null, coverDraft?.cardPreviewUrl ?? null);
   }
 
   function removePersisted(url: string) {
     const removed = [...removedUrls, url];
+    if (url === persistedCard && persistedCard !== persistedFull) removed.push(persistedCard);
     setRemovedUrls(removed);
-    if (url === persistedCover) {
-      setPersistedCover(null);
-      emit(null, persistedGallery, removed, drafts, coverBlob, coverPreviewUrl);
+    if (url === persistedFull) {
+      setPersistedFull(null);
+      setPersistedCard(null);
+      emit(null, null, persistedGallery, removed, drafts, coverFullBlob, coverCardBlob, coverCardPreviewUrl);
     } else {
       const nextGallery = persistedGallery.filter((u) => u !== url);
       setPersistedGallery(nextGallery);
-      emit(persistedCover, nextGallery, removed, drafts, coverBlob, coverPreviewUrl);
+      emit(persistedFull, persistedCard, nextGallery, removed, drafts, coverFullBlob, coverCardBlob, coverCardPreviewUrl);
     }
   }
 
-  function handleCropApply(blob: Blob, previewUrl: string) {
+  async function handleCropApply(cardBlob: Blob, cardPreviewUrl: string) {
     if (!cropTarget) return;
 
-    if (cropTarget.kind === 'persisted') {
-      const oldUrl = cropTarget.url;
-      const removed = oldUrl ? [...removedUrls, oldUrl] : removedUrls;
-      setRemovedUrls(removed);
-      setPersistedCover(null);
-      setCoverBlob(blob);
-      setCoverPreviewUrl(previewUrl);
+    if (cropTarget.kind === 'persisted-full') {
+      setPersistedCard(null);
+      setCoverCardBlob(cardBlob);
+      setCoverCardPreviewUrl(cardPreviewUrl);
       setCropTarget(null);
-      const clearedDrafts = drafts.map((d) => ({ ...d, isCover: false }));
-      setDrafts(clearedDrafts);
-      emit(null, persistedGallery, removed, clearedDrafts, blob, previewUrl);
+      emit(persistedFull, null, persistedGallery, removedUrls, drafts, coverFullBlob, cardBlob, cardPreviewUrl);
       return;
     }
 
+    const fullBlob = await convertFileToWebP(cropTarget.draft.file);
     const next = drafts.map((d) =>
       d.id === cropTarget.draft.id
-        ? { ...d, isCover: true, croppedBlob: blob, croppedPreviewUrl: previewUrl }
+        ? { ...d, isCover: true, fullBlob, cardBlob, cardPreviewUrl }
         : { ...d, isCover: false },
     );
     setDrafts(next);
-    setPersistedCover(null);
-    setCoverBlob(blob);
-    setCoverPreviewUrl(previewUrl);
+    setPersistedFull(null);
+    setPersistedCard(null);
+    setCoverFullBlob(fullBlob);
+    setCoverCardBlob(cardBlob);
+    setCoverCardPreviewUrl(cardPreviewUrl);
     setCropTarget(null);
-    emit(null, persistedGallery, removedUrls, next, blob, previewUrl);
+    emit(null, null, persistedGallery, removedUrls, next, fullBlob, cardBlob, cardPreviewUrl);
   }
 
   function closeCropModal() {
-    if (cropTarget?.kind === 'draft' && !cropTarget.draft.croppedBlob) {
+    if (cropTarget?.kind === 'draft' && !cropTarget.draft.cardBlob) {
       removeDraft(cropTarget.draft.id);
     }
     setCropTarget(null);
@@ -240,17 +261,17 @@ export default function StoryMediaUploader({
   const hasDraftCover = drafts.some((d) => d.isCover);
   const thumbs: Thumb[] = [];
 
-  if (persistedCover && !coverBlob) {
+  if (persistedFull && !coverFullBlob) {
     thumbs.push({
-      key: `p-cover-${persistedCover}`,
-      url: persistedCover,
+      key: `p-cover-${persistedFull}`,
+      url: persistedCard ?? persistedFull,
       isCover: !hasDraftCover,
-      onRemove: () => removePersisted(persistedCover),
-      onSelect: () => setPersistedAsCover(persistedCover),
+      onRemove: () => removePersisted(persistedFull),
+      onSelect: () => setPersistedAsCover(persistedFull),
     });
   }
   for (const url of persistedGallery) {
-    if (url === persistedCover) continue;
+    if (url === persistedFull) continue;
     thumbs.push({
       key: `p-${url}`,
       url,
@@ -262,25 +283,23 @@ export default function StoryMediaUploader({
   for (const d of drafts) {
     thumbs.push({
       key: d.id,
-      url: d.croppedPreviewUrl ?? d.previewUrl,
+      url: d.cardPreviewUrl ?? d.previewUrl,
       isCover: d.isCover,
       onRemove: () => removeDraft(d.id),
       onSelect: () => setAsCover(d.id),
     });
   }
 
-  const coverThumb = thumbs.find((t) => t.isCover) ?? thumbs[0];
-  const activeCoverUrl = coverPreviewUrl ?? coverThumb?.url ?? null;
-  const canRecrop = !disabled && (persistedCover || coverBlob || drafts.some((d) => d.isCover && d.croppedBlob));
+  const cardPreview = coverCardPreviewUrl ?? persistedCard ?? persistedFull;
+  const fullPreview = drafts.find((d) => d.isCover)?.previewUrl ?? persistedFull;
+  const canRecrop = !disabled && !!(fullPreview || coverFullBlob || drafts.some((d) => d.isCover && d.fullBlob));
 
   function openRecrop() {
-    if (coverBlob && coverPreviewUrl) {
-      setCropTarget({ kind: 'persisted', url: coverPreviewUrl });
-    } else if (persistedCover) {
-      setCropTarget({ kind: 'persisted', url: persistedCover });
-    } else {
-      const draftCover = drafts.find((d) => d.isCover);
-      if (draftCover) setCropTarget({ kind: 'draft', draft: draftCover });
+    const draftCover = drafts.find((d) => d.isCover);
+    if (draftCover) {
+      setCropTarget({ kind: 'draft', draft: draftCover });
+    } else if (persistedFull) {
+      setCropTarget({ kind: 'persisted-full', url: persistedFull });
     }
   }
 
@@ -290,16 +309,17 @@ export default function StoryMediaUploader({
 
       {thumbs.length > 0 && (
         <div className="media-gallery-preview">
+          <p className="form-hint media-preview-label">Card preview (16:9 — used on home &amp; story cards)</p>
           <div className="media-main-stage">
-            {activeCoverUrl ? (
-              <img src={activeCoverUrl} alt="Cover preview" className="media-main-image" />
+            {cardPreview ? (
+              <img src={cardPreview} alt="Card crop preview" className="media-main-image" />
             ) : (
-              <div className="media-main-placeholder">Select a cover image</div>
+              <div className="media-main-placeholder">Crop your cover for story cards</div>
             )}
           </div>
           {canRecrop && (
             <button type="button" className="btn btn-ghost btn-sm media-recrop-btn" onClick={openRecrop}>
-              Adjust cover crop
+              Adjust card crop
             </button>
           )}
           <div className="media-thumb-strip" role="tablist" aria-label="Story images">
@@ -353,13 +373,13 @@ export default function StoryMediaUploader({
         Add photos ({totalCount}/{MAX_STORY_IMAGES})
       </button>
       <p className="form-hint">
-        Any image format accepted · saved as WebP · crop cover for story cards (16:9)
+        Full image saved for reading view · 16:9 crop for cards only
       </p>
 
       {cropTarget && (
         <ImageCropModal
           file={cropTarget.kind === 'draft' ? cropTarget.draft.file : undefined}
-          imageUrl={cropTarget.kind === 'persisted' ? cropTarget.url : undefined}
+          imageUrl={cropTarget.kind === 'persisted-full' ? cropTarget.url : undefined}
           onApply={handleCropApply}
           onClose={closeCropModal}
         />

@@ -23,9 +23,11 @@ interface StoryFormProps {
 }
 
 const emptyMediaState = (): MediaUploadState => ({
-  coverBlob: null,
-  coverDisplayUrl: null,
-  persistedCoverUrl: null,
+  coverFullBlob: null,
+  coverCardBlob: null,
+  coverCardDisplayUrl: null,
+  persistedFullCoverUrl: null,
+  persistedCardCoverUrl: null,
   persistedGalleryUrls: [],
   pendingGalleryFiles: [],
   removedUrls: [],
@@ -79,15 +81,25 @@ export default function StoryForm({
     }
   }, [title, teaser, content, category, draftKey]);
 
-  async function uploadAllMedia(): Promise<{ coverUrl: string | null; galleryUrls: string[] }> {
-    let coverUrl = mediaState.persistedCoverUrl;
+  async function uploadAllMedia(): Promise<{
+    fullCoverUrl: string | null;
+    cardCoverUrl: string | null;
+    galleryUrls: string[];
+  }> {
+    let fullCoverUrl = mediaState.persistedFullCoverUrl;
+    let cardCoverUrl = mediaState.persistedCardCoverUrl;
 
-    if (mediaState.coverBlob) {
-      coverUrl = await uploadStoryImageBlob(userId, mediaState.coverBlob, 'cover');
+    if (mediaState.coverFullBlob) {
+      fullCoverUrl = await uploadStoryImageBlob(userId, mediaState.coverFullBlob, 'cover-full');
+    }
+    if (mediaState.coverCardBlob) {
+      cardCoverUrl = await uploadStoryImageBlob(userId, mediaState.coverCardBlob, 'cover-card');
+    } else if (fullCoverUrl && !cardCoverUrl) {
+      cardCoverUrl = fullCoverUrl;
     }
 
     const keptGallery = mediaState.persistedGalleryUrls.filter(
-      (u) => !mediaState.removedUrls.includes(u) && u !== coverUrl,
+      (u) => !mediaState.removedUrls.includes(u) && u !== fullCoverUrl && u !== cardCoverUrl,
     );
 
     for (const file of mediaState.pendingGalleryFiles) {
@@ -104,7 +116,8 @@ export default function StoryForm({
       : [];
 
     return {
-      coverUrl,
+      fullCoverUrl,
+      cardCoverUrl: cardCoverUrl ?? fullCoverUrl,
       galleryUrls: [...keptGallery, ...uploaded],
     };
   }
@@ -132,18 +145,22 @@ export default function StoryForm({
     setSubmitting(true);
     setError('');
 
-    const originalCover = story?.image_url ?? null;
+    const originalFull = story?.image_url ?? null;
+    const originalCard = story?.card_image_url ?? null;
     const originalGallery = [
       ...(story?.gallery_urls ?? []),
-      ...(originalCover ? [originalCover] : []),
+      ...(originalFull ? [originalFull] : []),
+      ...(originalCard ? [originalCard] : []),
     ].filter((u, i, arr) => u && arr.indexOf(u) === i);
 
-    let uploadedCover: string | null = null;
+    let uploadedFull: string | null = null;
+    let uploadedCard: string | null = null;
     let uploadedGallery: string[] = [];
 
     try {
-      const { coverUrl, galleryUrls } = await uploadAllMedia();
-      uploadedCover = coverUrl;
+      const { fullCoverUrl, cardCoverUrl, galleryUrls } = await uploadAllMedia();
+      uploadedFull = fullCoverUrl;
+      uploadedCard = cardCoverUrl;
       uploadedGallery = galleryUrls;
 
       if (mode === 'create') {
@@ -154,7 +171,8 @@ export default function StoryForm({
           category,
           status: 'pending',
           user_id: userId,
-          image_url: coverUrl,
+          image_url: fullCoverUrl,
+          card_image_url: cardCoverUrl,
           gallery_urls: galleryUrls,
         });
         if (insertError) throw insertError;
@@ -164,7 +182,8 @@ export default function StoryForm({
           teaser: teaser.trim() || null,
           content: content.trim(),
           category,
-          image_url: coverUrl,
+          image_url: fullCoverUrl,
+          card_image_url: cardCoverUrl,
           gallery_urls: galleryUrls,
         };
         if (isAdmin) {
@@ -182,11 +201,13 @@ export default function StoryForm({
 
       const toDelete = [
         ...mediaState.removedUrls,
-        ...(uploadedCover && originalCover && uploadedCover !== originalCover ? [originalCover] : []),
+        ...(uploadedFull && originalFull && uploadedFull !== originalFull ? [originalFull] : []),
+        ...(uploadedCard && originalCard && uploadedCard !== originalCard ? [originalCard] : []),
       ].filter((u, i, arr) => u && arr.indexOf(u) === i);
 
       const replacedGallery = originalGallery.filter(
-        (u) => !galleryUrls.includes(u) && !toDelete.includes(u),
+        (u) => !galleryUrls.includes(u) && !toDelete.includes(u)
+          && u !== fullCoverUrl && u !== cardCoverUrl,
       );
       toDelete.push(...replacedGallery);
 
@@ -201,7 +222,7 @@ export default function StoryForm({
       sessionStorage.removeItem(draftKey);
       onSuccess();
     } catch (err) {
-      const orphans = [uploadedCover, ...uploadedGallery].filter(Boolean) as string[];
+      const orphans = [uploadedFull, uploadedCard, ...uploadedGallery].filter(Boolean) as string[];
       if (orphans.length) {
         try {
           await deleteStoryImages(orphans);
@@ -322,6 +343,7 @@ export default function StoryForm({
         <StoryMediaUploader
           key={story?.id ?? 'new'}
           initialCoverUrl={story?.image_url ?? null}
+          initialCardUrl={story?.card_image_url ?? story?.image_url ?? null}
           initialGalleryUrls={initialGallery}
           onChange={setMediaState}
           disabled={submitting}

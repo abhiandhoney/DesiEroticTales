@@ -5,6 +5,7 @@ import StoryCard from '../components/StoryCard';
 import StoryFilters from '../components/StoryFilters';
 import ResultsMeta from '../components/ResultsMeta';
 import EmptyState from '../components/EmptyState';
+import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 
 export default function Stories() {
   const [stories, setStories] = useState<Story[]>([]);
@@ -16,6 +17,7 @@ export default function Stories() {
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState<'newest' | 'popular' | 'top_rated' | 'trending'>('newest');
   const [page, setPage] = useState(0);
+  const [authors, setAuthors] = useState<AuthorMap>({});
   const PAGE_SIZE = 24;
 
   useEffect(() => {
@@ -78,7 +80,12 @@ export default function Stories() {
       return;
     }
 
-    setStories((prev) => reset ? (data ?? []) : [...prev, ...(data ?? [])]);
+    const list = data ?? [];
+    setStories((prev) => {
+      const next = reset ? list : [...prev, ...list];
+      if (next.length) fetchStoryAuthors(next.map((s) => s.user_id)).then(setAuthors);
+      return next;
+    });
     if (reset) setTotalCount(count ?? 0);
     setLoading(false);
     setLoadingMore(false);
@@ -138,7 +145,9 @@ export default function Stories() {
       ) : (
         <>
           <ResultsMeta showing={stories.length} total={totalCount} />
-          <div className="stories-grid">{stories.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+          <div className="stories-grid">{stories.map((s) => (
+            <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+          ))}</div>
           {hasMore && (
             <div className="section-cta">
               <button

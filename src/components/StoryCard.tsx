@@ -1,46 +1,64 @@
 import { Link } from 'react-router-dom';
 import type { Story } from '../types';
 import { getStoryTeaser } from '../lib/storyTeaser';
-import { getStoryMediaUrls } from '../lib/storyMedia';
+import { getCardImageUrl, getStoryMediaUrls } from '../lib/storyMedia';
+import { estimateReadTime, formatReadTime } from '../lib/readTime';
 import SafeImage from './SafeImage';
 
 interface StoryCardProps {
   story: Story;
   badge?: string;
+  authorUsername?: string | null;
 }
 
-export default function StoryCard({ story, badge }: StoryCardProps) {
+export default function StoryCard({ story, badge, authorUsername }: StoryCardProps) {
+  const cardImage = getCardImageUrl(story);
   const photoCount = getStoryMediaUrls(story).length;
   const likes = story.like_count ?? 0;
+  const readMins = estimateReadTime(story.content);
 
   return (
     <Link to={`/story/${story.id}`} className="story-card">
       <div className="story-card-image">
-        {story.image_url ? (
-          <SafeImage src={story.image_url} alt={story.title} loading="lazy" />
+        {cardImage ? (
+          <SafeImage src={cardImage} alt={story.title} loading="lazy" />
         ) : (
           <div className="safe-image-fallback" />
         )}
+        <span className="story-card-category-badge">{story.category}</span>
         {badge && <span className="story-card-badge">{badge}</span>}
         {story.is_editors_choice && !badge && (
           <span className="story-card-badge">Editor&apos;s Choice</span>
         )}
       </div>
       <div className="story-card-body">
-        <span className="story-category">{story.category}</span>
         <h3 className="story-title">{story.title}</h3>
-        <p className="story-teaser">{getStoryTeaser(story)}</p>
+        <p className="story-teaser">{getStoryTeaser(story, 140)}</p>
         <div className="story-meta">
-          <span className="story-views">{story.views.toLocaleString()} reads</span>
+          {authorUsername && (
+            <>
+              <span className="story-card-author">@{authorUsername}</span>
+              <span className="story-meta-sep"> · </span>
+            </>
+          )}
+          <span>{formatReadTime(readMins)}</span>
+          <span className="story-meta-sep"> · </span>
+          <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+          {story.views > 0 && (
+            <>
+              <span className="story-meta-sep"> · </span>
+              <span>{story.views.toLocaleString()} reads</span>
+            </>
+          )}
           {likes > 0 && (
             <>
-              <span> · </span>
+              <span className="story-meta-sep"> · </span>
               <span>👍 {likes.toLocaleString()}</span>
             </>
           )}
           {photoCount > 1 && (
             <>
-              <span> · </span>
+              <span className="story-meta-sep"> · </span>
               <span>{photoCount} photos</span>
             </>
           )}

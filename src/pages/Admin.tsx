@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story, StoryStatus } from '../types';
@@ -15,6 +15,8 @@ export default function Admin() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [reviewStory, setReviewStory] = useState<Story | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [adminSearch, setAdminSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | StoryStatus>('all');
 
   useEffect(() => {
     fetchStories();
@@ -87,7 +89,20 @@ export default function Admin() {
     setActionId(null);
   }
 
-  const stories = tab === 'pending' ? pending : allStories;
+  const rawStories = tab === 'pending' ? pending : allStories;
+
+  const stories = useMemo(() => {
+    const q = adminSearch.trim().toLowerCase();
+    return rawStories.filter((s) => {
+      if (tab === 'all' && statusFilter !== 'all' && s.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        s.title.toLowerCase().includes(q)
+        || (s.teaser?.toLowerCase().includes(q) ?? false)
+        || s.category.toLowerCase().includes(q)
+      );
+    });
+  }, [rawStories, adminSearch, statusFilter, tab]);
 
   return (
     <div className="page admin-page">
@@ -103,6 +118,28 @@ export default function Admin() {
       )}
 
       {error && <div className="form-error">{error}</div>}
+
+      <div className="admin-toolbar">
+        <input
+          type="search"
+          className="input admin-search"
+          placeholder="Search title, teaser, category..."
+          value={adminSearch}
+          onChange={(e) => setAdminSearch(e.target.value)}
+        />
+        {tab === 'all' && (
+          <select
+            className="select admin-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | StoryStatus)}
+          >
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        )}
+      </div>
 
       <div className="admin-tabs" role="tablist" aria-label="Story moderation tabs">
         <button

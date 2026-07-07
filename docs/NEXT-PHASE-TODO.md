@@ -64,7 +64,7 @@
 
 ## Deploy checklist
 
-- [ ] Run migrations `004`–`009` in Supabase SQL Editor (in order)
-- [ ] Smoke test: sign-in, edit profile + avatar, follow writer, share story
-- [ ] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`) — never commit real email
-- [ ] Upload admin avatar: `public/assets/admin-avatar-unisex.jpg`
+- [x] Run migrations `004`–`009` in Supabase SQL Editor (in order)
+- [x] Smoke test: sign-in, edit profile + avatar, follow writer, share story
+- [x] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`) — never commit real email
+- [x] Upload admin avatar: `public/assets/admin-avatar-unisex.jpg`

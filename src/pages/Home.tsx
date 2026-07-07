@@ -9,6 +9,9 @@ import { useAuth } from '../hooks/useAuth';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import { fetchEditorsChoice, fetchStoryOfTheMonth, fetchStoryOfTheWeek } from '../lib/rankings';
 import SafeImage from '../components/SafeImage';
+import { getCardImageUrl } from '../lib/storyMedia';
+import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+
 
 const LATEST_LIMIT = 8;
 
@@ -22,6 +25,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [category, setCategory] = useState('');
+  const [authors, setAuthors] = useState<AuthorMap>({});
 
   useEffect(() => {
     fetchStories();
@@ -31,6 +35,11 @@ export default function Home() {
       fetchEditorsChoice(4).then(setEditorsChoice);
     }
   }, [category]);
+
+  useEffect(() => {
+    const ids = [...editorsChoice, ...stories].map((s) => s.user_id);
+    if (ids.length) fetchStoryAuthors(ids).then((m) => setAuthors((prev) => ({ ...prev, ...m })));
+  }, [editorsChoice, stories]);
 
   async function fetchStories() {
     setLoading(true);
@@ -54,8 +63,12 @@ export default function Home() {
       return;
     }
 
-    setStories(data ?? []);
-    setTotalCount(count ?? data?.length ?? 0);
+    const list = data ?? [];
+    setStories(list);
+    setTotalCount(count ?? list.length);
+    if (list.length) {
+      fetchStoryAuthors(list.map((s) => s.user_id)).then(setAuthors);
+    }
     setLoading(false);
   }
 
@@ -94,8 +107,8 @@ export default function Home() {
           <h2 className="section-title">Story of the Week</h2>
           <Link to={`/story/${featured.id}`} className="featured-story-card">
             <div className="featured-story-image">
-              {featured.image_url ? (
-                <SafeImage src={featured.image_url} alt={featured.title} loading="eager" />
+              {getCardImageUrl(featured) ? (
+                <SafeImage src={getCardImageUrl(featured)!} alt={featured.title} loading="eager" />
               ) : (
                 <div className="safe-image-fallback" />
               )}
@@ -117,8 +130,8 @@ export default function Home() {
           <h2 className="section-title">Story of the Month</h2>
           <Link to={`/story/${storyOfMonth.id}`} className="featured-story-card featured-story-card-alt">
             <div className="featured-story-image">
-              {storyOfMonth.image_url ? (
-                <SafeImage src={storyOfMonth.image_url} alt={storyOfMonth.title} loading="lazy" />
+              {getCardImageUrl(storyOfMonth) ? (
+                <SafeImage src={getCardImageUrl(storyOfMonth)!} alt={storyOfMonth.title} loading="lazy" />
               ) : (
                 <div className="safe-image-fallback" />
               )}
@@ -139,7 +152,9 @@ export default function Home() {
         <section className="editors-choice-section home-section">
           <h2 className="section-title">Editor&apos;s Choice</h2>
           <div className="stories-grid stories-grid-compact">
-            {editorsChoice.map((s) => <StoryCard key={s.id} story={s} badge="Editor's Choice" />)}
+            {editorsChoice.map((s) => (
+              <StoryCard key={s.id} story={s} badge="Editor's Choice" authorUsername={authors[s.user_id]?.username} />
+            ))}
           </div>
         </section>
       )}
@@ -184,7 +199,9 @@ export default function Home() {
           />
         ) : (
           <>
-            <div className="stories-grid">{stories.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+            <div className="stories-grid">{stories.map((s) => (
+              <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+            ))}</div>
             {totalCount > LATEST_LIMIT && (
               <div className="section-cta">
                 <Link to="/stories" className="btn btn-primary btn-lg">View all {totalCount} stories &rarr;</Link>

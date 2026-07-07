@@ -9,6 +9,9 @@ import StoryReactions from '../components/StoryReactions';
 import ShareButton from '../components/ShareButton';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { getStoryTeaser } from '../lib/storyTeaser';
+import { getCardImageUrl } from '../lib/storyMedia';
+import { estimateReadTime, formatReadTime } from '../lib/readTime';
+import { useReadingPrefs, type FontSize } from '../hooks/useReadingPrefs';
 
 export default function StoryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,11 +21,12 @@ export default function StoryDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const viewsCounted = useRef(false);
+  const { fontSize, setFontSize } = useReadingPrefs();
 
   usePageMeta({
     title: story?.title ?? 'Story',
     description: story ? getStoryTeaser(story, 160) : undefined,
-    image: story?.image_url,
+    image: story ? getCardImageUrl(story) : undefined,
     path: story ? `/story/${story.id}` : id ? `/story/${id}` : undefined,
   });
 
@@ -118,9 +122,25 @@ export default function StoryDetail() {
           </p>
         )}
         <div className="story-detail-meta">
+          <span>{formatReadTime(estimateReadTime(story.content))}</span>
+          <span> | </span>
           <span>{story.views.toLocaleString()} reads</span>
           <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        </div>
+        <div className="reading-controls" role="group" aria-label="Reading preferences">
+          <span className="reading-controls-label">Text size</span>
+          {(['sm', 'md', 'lg'] as FontSize[]).map((size) => (
+            <button
+              key={size}
+              type="button"
+              className={`reading-size-btn ${fontSize === size ? 'active' : ''}`}
+              onClick={() => setFontSize(size)}
+              aria-pressed={fontSize === size}
+            >
+              {size === 'sm' ? 'A' : size === 'md' ? 'A+' : 'A++'}
+            </button>
+          ))}
         </div>
         <div className="story-header-actions">
           <StoryReactions
