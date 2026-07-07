@@ -1,38 +1,113 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import MainLayout from './components/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Stories from './pages/Stories';
 import StoryDetail from './pages/StoryDetail';
-import Submit from './pages/Submit';
-import Profile from './pages/Profile';
-import EditStory from './pages/EditStory';
-import Admin from './pages/Admin';
+import WriterProfile from './pages/WriterProfile';
+import Writers from './pages/Writers';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
+
+const Submit = lazy(() => import('./pages/Submit'));
+const Profile = lazy(() => import('./pages/Profile'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
+const OnboardingUsername = lazy(() => import('./pages/OnboardingUsername'));
+const EditStory = lazy(() => import('./pages/EditStory'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 const routerBasename =
   import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
 
+function PageLoader() {
+  return (
+    <div className="page-loading" aria-busy="true">
+      <div className="spinner" />
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter basename={routerBasename}>
-        <Routes>
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/stories" element={<Stories />} />
-            <Route path="/story/:id" element={<StoryDetail />} />
-            <Route path="/profile" element={<ProtectedRoute requireWriter><Profile /></ProtectedRoute>} />
-            <Route path="/submit" element={<ProtectedRoute requireWriter><Submit /></ProtectedRoute>} />
-            <Route path="/edit/:id" element={<ProtectedRoute requireWriter><EditStory /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter basename={routerBasename}>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/stories" element={<Stories />} />
+              <Route path="/story/:id" element={<StoryDetail />} />
+              <Route path="/writer/:username" element={<WriterProfile />} />
+              <Route path="/writers" element={<Writers />} />
+              <Route
+                path="/onboarding/username"
+                element={
+                  <ProtectedRoute requireWriter requireOnboarding={false}>
+                    <Suspense fallback={<PageLoader />}>
+                      <OnboardingUsername />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute requireWriter>
+                    <Suspense fallback={<PageLoader />}>
+                      <Profile />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/edit"
+                element={
+                  <ProtectedRoute requireWriter>
+                    <Suspense fallback={<PageLoader />}>
+                      <EditProfile />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/submit"
+                element={
+                  <ProtectedRoute requireWriter>
+                    <Suspense fallback={<PageLoader />}>
+                      <Submit />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit/:id"
+                element={
+                  <ProtectedRoute requireWriter>
+                    <Suspense fallback={<PageLoader />}>
+                      <EditStory />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <Suspense fallback={<PageLoader />}>
+                      <Admin />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

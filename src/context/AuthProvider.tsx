@@ -19,6 +19,7 @@ interface AuthState {
   loading: boolean;
   isAdmin: boolean;
   isWriter: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -37,10 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       setProfile(null);
     } else {
-      setProfile(data);
+      setProfile(data as Profile);
     }
     setLoading(false);
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (user) await fetchProfile(user.id);
+  }, [user, fetchProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -76,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isWriter = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, isWriter }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, isWriter, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

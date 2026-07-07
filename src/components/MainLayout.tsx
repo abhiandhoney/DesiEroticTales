@@ -7,9 +7,10 @@ export default function MainLayout() {
   return (
     <>
       <AgeGate />
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <div className="app">
         <Navbar />
-        <main className="main-content">
+        <main id="main-content" className="main-content">
           <Outlet />
         </main>
         <Footer />

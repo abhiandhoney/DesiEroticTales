@@ -1,13 +1,13 @@
 import { STORY_CATEGORIES } from '../types';
 
 interface StoryFiltersProps {
-  search: string;
-  onSearchChange: (value: string) => void;
+  search?: string;
+  onSearchChange?: (value: string) => void;
   category: string;
   onCategoryChange: (value: string) => void;
   searchPlaceholder?: string;
-  sort?: 'newest' | 'popular';
-  onSortChange?: (value: 'newest' | 'popular') => void;
+  sort?: 'newest' | 'popular' | 'top_rated' | 'trending';
+  onSortChange?: (value: 'newest' | 'popular' | 'top_rated' | 'trending') => void;
 }
 
 export default function StoryFilters({
@@ -21,14 +21,16 @@ export default function StoryFilters({
 }: StoryFiltersProps) {
   return (
     <div className="filters-section">
-      <input
-        type="search"
-        placeholder={searchPlaceholder}
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="input"
-        aria-label="Search stories"
-      />
+      {search !== undefined && onSearchChange && (
+        <input
+          type="search"
+          placeholder={searchPlaceholder}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="input"
+          aria-label="Search stories"
+        />
+      )}
       <div className="filter-row">
         <select
           value={category}
@@ -44,12 +46,14 @@ export default function StoryFilters({
         {sort !== undefined && onSortChange && (
           <select
             value={sort}
-            onChange={(e) => onSortChange(e.target.value as 'newest' | 'popular')}
+            onChange={(e) => onSortChange(e.target.value as 'newest' | 'popular' | 'top_rated' | 'trending')}
             className="select filter-select"
             aria-label="Sort stories"
           >
             <option value="newest">Newest first</option>
             <option value="popular">Most read</option>
+            <option value="top_rated">Top rated</option>
+            <option value="trending">Trending (30d)</option>
           </select>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { storeAuthReturnPath } from '../lib/auth';
 import { useAuth, signInWithGoogle } from '../hooks/useAuth';
 
@@ -7,11 +7,19 @@ interface Props {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requireWriter?: boolean;
+  requireOnboarding?: boolean;
 }
 
-export default function ProtectedRoute({ children, requireAdmin = false, requireWriter = false }: Props) {
-  const { user, loading, isAdmin, isWriter } = useAuth();
+export default function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  requireWriter = false,
+  requireOnboarding = true,
+}: Props) {
+  const { user, profile, loading, isAdmin, isWriter } = useAuth();
   const location = useLocation();
+
+  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -58,11 +66,19 @@ export default function ProtectedRoute({ children, requireAdmin = false, require
     );
   }
 
+  if (requireOnboarding && !isOnboardingRoute && profile && !profile.onboarding_complete) {
+    return <Navigate to="/onboarding/username" replace />;
+  }
+
+  if (isOnboardingRoute && profile?.onboarding_complete) {
+    return <Navigate to="/profile" replace />;
+  }
+
   if (requireWriter && !isWriter) {
     return (
       <div className="page auth-required-page">
         <h2>Sign in required</h2>
-        <p className="page-subtitle">Create an account to use this feature.</p>
+        <p className="page-subtitle">Sign in to use this feature.</p>
         <Link to="/" className="btn btn-primary">Back to home</Link>
       </div>
     );

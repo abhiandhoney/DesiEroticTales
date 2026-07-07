@@ -1,16 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import StoryForm from '../components/StoryForm';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Submit() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
 
   function handleCreateSuccess() {
     setSuccess(true);
-    setTimeout(() => navigate('/profile'), 2500);
   }
 
   if (success) {
@@ -19,9 +17,10 @@ export default function Submit() {
         <div className="success-message">
           <h2>Story submitted!</h2>
           <p>Your tale is pending review. Track it anytime from your profile.</p>
-          <Link to="/profile" className="btn btn-ghost success-action">
-            Go to profile
-          </Link>
+          <div className="auth-required-actions success-action">
+            <Link to="/profile" className="btn btn-primary">Go to profile</Link>
+            <Link to="/stories" className="btn btn-ghost">Browse stories</Link>
+          </div>
         </div>
       </div>
     );

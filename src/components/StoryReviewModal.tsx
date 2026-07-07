@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import type { Story, StoryStatus } from '../types';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import StoryMediaGallery from './StoryMediaGallery';
 
 interface StoryReviewModalProps {
   story: Story;
@@ -16,22 +19,21 @@ export default function StoryReviewModal({
 }: StoryReviewModalProps) {
   const paragraphs = story.content.split(/\n\n+/).filter(Boolean);
 
+  useBodyScrollLock(true);
+  const trapRef = useFocusTrap(true);
+
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
       <div
+        ref={trapRef}
         className="modal-panel story-review-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -60,11 +62,7 @@ export default function StoryReviewModal({
           </div>
         )}
 
-        {story.image_url && (
-          <div className="review-image">
-            <img src={story.image_url} alt={story.title} />
-          </div>
-        )}
+        <StoryMediaGallery story={story} />
 
         <div className="review-content">
           <span className="review-label">Full story</span>

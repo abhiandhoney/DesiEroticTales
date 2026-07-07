@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const STORAGE_KEY = 'desierotictales_age_verified';
 
@@ -11,14 +12,12 @@ export default function AgeGate() {
   }, []);
 
   useEffect(() => {
-    if (!visible) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    confirmRef.current?.focus();
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    if (visible) {
+      confirmRef.current?.focus();
+    }
   }, [visible]);
+
+  useBodyScrollLock(visible);
 
   if (!visible) return null;
 

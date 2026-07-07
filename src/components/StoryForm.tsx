@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { convertFileToWebP } from '../lib/imageProcessing';
 import { deleteStoryImages, uploadStoryImageBlob, uploadStoryImageBlobs } from '../lib/storyImages';
@@ -54,6 +54,30 @@ export default function StoryForm({
     () => (story?.gallery_urls ?? []).filter((u) => u && u !== story?.image_url),
     [story],
   );
+
+  const draftKey = mode === 'create' ? 'story-draft-new' : `story-draft-${story?.id}`;
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(draftKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!title && parsed.title) setTitle(parsed.title);
+        if (!teaser && parsed.teaser) setTeaser(parsed.teaser);
+        if (!content && parsed.content) setContent(parsed.content);
+        if (parsed.category) setCategory(parsed.category);
+      } catch {
+        // Ignore parsing errors
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (title || teaser || content) {
+      sessionStorage.setItem(draftKey, JSON.stringify({ title, teaser, content, category }));
+    }
+  }, [title, teaser, content, category, draftKey]);
 
   async function uploadAllMedia(): Promise<{ coverUrl: string | null; galleryUrls: string[] }> {
     let coverUrl = mediaState.persistedCoverUrl;
@@ -138,7 +162,11 @@ export default function StoryForm({
           image_url: coverUrl,
           gallery_urls: galleryUrls,
         };
-        if (isAdmin) updates.status = status;
+        if (isAdmin) {
+          updates.status = status;
+        } else if (story.status === 'rejected') {
+          updates.status = 'pending';
+        }
 
         const { error: updateError } = await supabase
           .from('stories')
@@ -165,6 +193,7 @@ export default function StoryForm({
         }
       }
 
+      sessionStorage.removeItem(draftKey);
       onSuccess();
     } catch (err) {
       const orphans = [uploadedCover, ...uploadedGallery].filter(Boolean) as string[];
@@ -189,6 +218,7 @@ export default function StoryForm({
     }
   }
 
+  const isResubmit = mode === 'edit' && story?.status === 'rejected' && !isAdmin;
   const submitLabel =
     mode === 'create'
       ? submitting
@@ -196,7 +226,9 @@ export default function StoryForm({
         : 'Submit for Review'
       : submitting
         ? 'Saving...'
-        : 'Save Changes';
+        : isResubmit
+          ? 'Resubmit for Review'
+          : 'Save Changes';
 
   return (
     <form className="submit-form" onSubmit={handleSubmit}>

@@ -24,6 +24,18 @@ export async function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   return img;
 }
 
+export async function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.decoding = 'async';
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Could not load image from URL'));
+    img.src = url;
+  });
+  return img;
+}
+
 function drawToCanvas(
   width: number,
   height: number,

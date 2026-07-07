@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, signInWithGoogle, signOut } from '../hooks/useAuth';
+import { useAuth, signInWithGoogle } from '../hooks/useAuth';
+import UserMenu from './UserMenu';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export default function Navbar() {
   const { user, profile, loading, isAdmin, isWriter } = useAuth();
@@ -14,12 +16,11 @@ export default function Navbar() {
     setAuthError('');
   }, [location.pathname]);
 
+  useBodyScrollLock(menuOpen);
+
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [menuOpen]);
+    if (user) setSigningIn(false);
+  }, [user]);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -51,14 +52,7 @@ export default function Navbar() {
     }
   }
 
-  async function handleSignOut() {
-    try {
-      await signOut();
-      setMenuOpen(false);
-    } catch {
-      setAuthError('Sign-out failed. Please try again.');
-    }
-  }
+  const displayUsername = profile?.username ?? user?.email?.split('@')[0] ?? 'user';
 
   return (
     <nav className="navbar">
@@ -92,7 +86,7 @@ export default function Navbar() {
           <div className="navbar-links">
             {navLink('/', 'Home')}
             {navLink('/stories', 'Stories')}
-            {isWriter && navLink('/profile', 'Profile')}
+            {navLink('/writers', 'Writers')}
             {isWriter && navLink('/submit', 'Submit')}
             {isAdmin && navLink('/admin', 'Admin')}
           </div>
@@ -100,12 +94,12 @@ export default function Navbar() {
             {loading ? (
               <span className="auth-loading" aria-live="polite">Loading...</span>
             ) : user ? (
-              <div className="user-menu">
-                <span className="user-name">{profile?.username ?? user.email?.split('@')[0]}</span>
-                <button type="button" className="btn btn-sm btn-ghost" onClick={handleSignOut}>
-                  Sign out
-                </button>
-              </div>
+              <UserMenu
+                username={displayUsername}
+                profileUsername={profile?.username}
+                avatarUrl={profile?.avatar_url}
+                onNavigate={() => setMenuOpen(false)}
+              />
             ) : (
               <div className="navbar-signin">
                 <button

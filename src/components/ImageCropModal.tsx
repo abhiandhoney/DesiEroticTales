@@ -1,71 +1,106 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   defaultCropTransform,
   loadImageFromFile,
+  loadImageFromUrl,
   renderCoverWebP,
   type CropTransform,
 } from '../lib/imageProcessing';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ImageCropModalProps {
-  file: File;
+  file?: File;
+  imageUrl?: string;
   onApply: (webpBlob: Blob, previewUrl: string) => void;
   onClose: () => void;
 }
 
-export default function ImageCropModal({ file, onApply, onClose }: ImageCropModalProps) {
+export default function ImageCropModal({ file, imageUrl, onApply, onClose }: ImageCropModalProps) {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [transform, setTransform] = useState<CropTransform>(defaultCropTransform());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    loadImageFromFile(file)
-      .then(setImg)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load image'));
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    let url = imageUrl || '';
+    let objectUrl = '';
+
+    if (file) {
+      objectUrl = URL.createObjectURL(file);
+      url = objectUrl;
+    }
+
+    if (url) {
+      setPreviewUrl(url);
+      const loader = file ? loadImageFromFile(file) : loadImageFromUrl(url);
+      loader
+        .then(setImg)
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load image'));
+    }
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [file, imageUrl]);
+
+  useBodyScrollLock(true);
+  const trapRef = useFocusTrap(true);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    dragRef.current = { x: e.clientX, y: e.clientY, ox: transform.offsetX, oy: transform.offsetY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    function onWheel(e: WheelEvent) {
+      e.preventDefault();
+      setTransform((t) => ({
+        ...t,
+        scale: Math.min(3, Math.max(1, t.scale + (e.deltaY > 0 ? -0.08 : 0.08))),
+      }));
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [previewUrl]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      ox: transform.offsetX,
+      oy: transform.offsetY,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
   }, [transform.offsetX, transform.offsetY]);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    const drag = dragRef.current;
+    if (!drag) return;
     setTransform((t) => ({
       ...t,
-      offsetX: dragRef.current!.ox + (e.clientX - dragRef.current!.x),
-      offsetY: dragRef.current!.oy + (e.clientY - dragRef.current!.y),
+      offsetX: drag.ox + (e.clientX - drag.x),
+      offsetY: drag.oy + (e.clientY - drag.y),
     }));
   }, []);
 
-  const onPointerUp = useCallback(() => {
+  const onPointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     dragRef.current = null;
-  }, []);
-
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setTransform((t) => ({
-      ...t,
-      scale: Math.min(3, Math.max(1, t.scale + (e.deltaY > 0 ? -0.08 : 0.08))),
-    }));
   }, []);
 
   async function handleApply() {
@@ -74,8 +109,8 @@ export default function ImageCropModal({ file, onApply, onClose }: ImageCropModa
     setError('');
     try {
       const blob = await renderCoverWebP(img, transform);
-      const previewUrl = URL.createObjectURL(blob);
-      onApply(blob, previewUrl);
+      const croppedPreview = URL.createObjectURL(blob);
+      onApply(blob, croppedPreview);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not crop image');
       setSaving(false);
@@ -85,6 +120,7 @@ export default function ImageCropModal({ file, onApply, onClose }: ImageCropModa
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
       <div
+        ref={trapRef}
         className="modal-panel crop-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -104,12 +140,12 @@ export default function ImageCropModal({ file, onApply, onClose }: ImageCropModa
         {error && <div className="form-error crop-error">{error}</div>}
 
         <div
+          ref={viewportRef}
           className="crop-viewport"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onWheel={onWheel}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
         >
           {previewUrl ? (
             <img

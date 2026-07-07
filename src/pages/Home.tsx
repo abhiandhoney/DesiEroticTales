@@ -4,17 +4,32 @@ import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import StoryCard from '../components/StoryCard';
 import StoryFilters from '../components/StoryFilters';
+import EmptyState from '../components/EmptyState';
+import { useAuth } from '../hooks/useAuth';
+import { getStoryTeaser } from '../lib/storyTeaser';
+import { fetchEditorsChoice, fetchStoryOfTheMonth, fetchStoryOfTheWeek } from '../lib/rankings';
+import SafeImage from '../components/SafeImage';
+
+const LATEST_LIMIT = 8;
 
 export default function Home() {
+  const { isWriter } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
+  const [storyOfWeek, setStoryOfWeek] = useState<Story | null>(null);
+  const [storyOfMonth, setStoryOfMonth] = useState<Story | null>(null);
+  const [editorsChoice, setEditorsChoice] = useState<Story[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
 
   useEffect(() => {
     fetchStories();
+    if (!category) {
+      fetchStoryOfTheWeek().then(setStoryOfWeek);
+      fetchStoryOfTheMonth().then(setStoryOfMonth);
+      fetchEditorsChoice(4).then(setEditorsChoice);
+    }
   }, [category]);
 
   async function fetchStories() {
@@ -28,7 +43,7 @@ export default function Home() {
     if (category) countQuery = countQuery.eq('category', category);
 
     let query = supabase.from('stories').select('*').eq('status', 'approved')
-      .order('created_at', { ascending: false }).limit(24);
+      .order('created_at', { ascending: false }).limit(LATEST_LIMIT);
     if (category) query = query.eq('category', category);
 
     const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
@@ -44,16 +59,7 @@ export default function Home() {
     setLoading(false);
   }
 
-  const filtered = stories.filter((s) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      s.title.toLowerCase().includes(q) ||
-      (s.teaser?.toLowerCase().includes(q) ?? false) ||
-      s.content.toLowerCase().includes(q) ||
-      s.category.toLowerCase().includes(q)
-    );
-  });
+  const featured = storyOfWeek;
 
   return (
     <div className="page home-page">
@@ -71,57 +77,119 @@ export default function Home() {
         <div className="hero-stats">
           <span>{totalCount > 0 ? `${totalCount}+` : 'New'} stories</span>
           <span> | </span>
-          <span>Fresh tales added regularly</span>
+          <Link to="/writers" className="hero-writers-link">Top writers</Link>
+        </div>
+        <div className="hero-actions">
+          <Link to="/stories" className="btn btn-primary btn-lg">Browse stories</Link>
+          {isWriter ? (
+            <Link to="/submit" className="btn btn-ghost btn-lg">Submit a tale</Link>
+          ) : (
+            <Link to="/stories" className="btn btn-ghost btn-lg">Start reading</Link>
+          )}
         </div>
       </section>
 
+      {featured && !category && !loading && (
+        <section className="featured-story">
+          <h2 className="section-title">Story of the Week</h2>
+          <Link to={`/story/${featured.id}`} className="featured-story-card">
+            <div className="featured-story-image">
+              {featured.image_url ? (
+                <SafeImage src={featured.image_url} alt={featured.title} loading="eager" />
+              ) : (
+                <div className="safe-image-fallback" />
+              )}
+            </div>
+            <div className="featured-story-body">
+              <span className="story-category">Most liked this week · {featured.category}</span>
+              <h3 className="featured-story-title">{featured.title}</h3>
+              <p className="featured-story-teaser">{getStoryTeaser(featured, 180)}</p>
+              <span className="featured-story-cta">
+                👍 {(featured.like_count ?? 0).toLocaleString()} · Read now &rarr;
+              </span>
+            </div>
+          </Link>
+        </section>
+      )}
+
+      {storyOfMonth && storyOfMonth.id !== featured?.id && !category && !loading && (
+        <section className="featured-story story-of-month">
+          <h2 className="section-title">Story of the Month</h2>
+          <Link to={`/story/${storyOfMonth.id}`} className="featured-story-card featured-story-card-alt">
+            <div className="featured-story-image">
+              {storyOfMonth.image_url ? (
+                <SafeImage src={storyOfMonth.image_url} alt={storyOfMonth.title} loading="lazy" />
+              ) : (
+                <div className="safe-image-fallback" />
+              )}
+            </div>
+            <div className="featured-story-body">
+              <span className="story-category">Most liked this month · {storyOfMonth.category}</span>
+              <h3 className="featured-story-title">{storyOfMonth.title}</h3>
+              <p className="featured-story-teaser">{getStoryTeaser(storyOfMonth, 180)}</p>
+              <span className="featured-story-cta">
+                👍 {(storyOfMonth.like_count ?? 0).toLocaleString()} · Read now &rarr;
+              </span>
+            </div>
+          </Link>
+        </section>
+      )}
+
+      {editorsChoice.length > 0 && !category && (
+        <section className="editors-choice-section home-section">
+          <h2 className="section-title">Editor&apos;s Choice</h2>
+          <div className="stories-grid stories-grid-compact">
+            {editorsChoice.map((s) => <StoryCard key={s.id} story={s} badge="Editor's Choice" />)}
+          </div>
+        </section>
+      )}
+
+      {!category && (
+        <section className="home-cta-strip" aria-label="Get started">
+          <div className="home-cta-strip-inner">
+            <div className="home-cta-copy">
+              <h2 className="home-cta-title">Ready for your next late-night read?</h2>
+              <p className="home-cta-sub">Browse hundreds of Telugu &amp; Desi tales — or join our writers and share your own.</p>
+            </div>
+            <div className="home-cta-actions">
+              <Link to="/stories" className="btn btn-primary">Browse stories</Link>
+              <Link to="/writers" className="btn btn-ghost">Meet top writers</Link>
+              {isWriter && <Link to="/submit" className="btn btn-ghost">Submit a tale</Link>}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="ad-slot ad-slot-top" data-adsterra="top-banner">{/* ADSTERRA */}</div>
 
-      <StoryFilters
-        search={search}
-        onSearchChange={setSearch}
-        category={category}
-        onCategoryChange={setCategory}
-        searchPlaceholder="Search latest stories..."
-      />
+      <StoryFilters category={category} onCategoryChange={setCategory} />
 
       <section className="stories-grid-section">
         <h2 className="section-title">Latest Tales</h2>
         {error ? (
-          <div className="empty-state">
-            <p>{error}</p>
-            <button type="button" className="btn btn-ghost empty-state-action" onClick={fetchStories}>
-              Retry
-            </button>
-          </div>
+          <EmptyState
+            message={error}
+            action={<button type="button" className="btn btn-ghost" onClick={fetchStories}>Retry</button>}
+          />
         ) : loading ? (
-          <div className="page-loading" aria-busy="true"><div className="spinner" /></div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            {search.trim() || category ? (
-              <>
-                <p>No stories match your search or filter.</p>
-                <button
-                  type="button"
-                  className="btn btn-ghost empty-state-action"
-                  onClick={() => { setSearch(''); setCategory(''); }}
-                >
-                  Clear filters
-                </button>
-              </>
-            ) : (
-              <p>No stories yet. Check back soon — new tales are brewing.</p>
-            )}
+          <div className="stories-grid" aria-busy="true">
+            {Array.from({ length: LATEST_LIMIT }).map((_, i) => (
+              <div key={i} className="skeleton skeleton-card" />
+            ))}
           </div>
+        ) : stories.length === 0 ? (
+          <EmptyState
+            message={category ? 'No stories match your filter.' : 'No stories yet. Check back soon.'}
+            action={category ? <button type="button" className="btn btn-ghost" onClick={() => setCategory('')}>Clear filter</button> : undefined}
+          />
         ) : (
           <>
-            {search.trim() && (
-              <p className="search-hint">
-                Showing matches from the latest {stories.length} stories.{' '}
-                <Link to="/stories">Browse all stories</Link> for the full library.
-              </p>
+            <div className="stories-grid">{stories.map((s) => <StoryCard key={s.id} story={s} />)}</div>
+            {totalCount > LATEST_LIMIT && (
+              <div className="section-cta">
+                <Link to="/stories" className="btn btn-primary btn-lg">View all {totalCount} stories &rarr;</Link>
+              </div>
             )}
-            <div className="stories-grid">{filtered.map((s) => <StoryCard key={s.id} story={s} />)}</div>
           </>
         )}
       </section>

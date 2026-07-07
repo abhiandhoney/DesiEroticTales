@@ -39,8 +39,8 @@ export default function EditStory() {
         setLoading(false);
         return;
       }
-      if (data.status !== 'pending') {
-        setError('You can only edit stories that are pending review.');
+      if (data.status !== 'pending' && data.status !== 'rejected') {
+        setError('You can only edit stories that are pending or rejected.');
         setLoading(false);
         return;
       }
@@ -52,7 +52,6 @@ export default function EditStory() {
 
   function handleSuccess() {
     setSuccess(true);
-    setTimeout(() => navigate(isAdmin ? '/admin' : '/profile'), 2500);
   }
 
   if (authLoading || loading) {
@@ -69,6 +68,14 @@ export default function EditStory() {
         <div className="success-message">
           <h2>Story updated!</h2>
           <p>Your changes have been saved.</p>
+          <div className="auth-required-actions success-action">
+            <Link to={isAdmin ? '/admin' : '/profile'} className="btn btn-primary">
+              {isAdmin ? 'Back to Admin' : 'Back to Profile'}
+            </Link>
+            <Link to={`/story/${story?.id}`} className="btn btn-ghost">
+              View Story
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -78,7 +85,7 @@ export default function EditStory() {
     return (
       <div className="page error-page">
         <h2>{error || 'Unable to load story'}</h2>
-        <Link to={isAdmin ? '/admin' : '/submit'} className="btn btn-primary">
+        <Link to={isAdmin ? '/admin' : '/profile'} className="btn btn-primary">
           Go back
         </Link>
       </div>
@@ -105,7 +112,7 @@ export default function EditStory() {
         userId={user.id}
         isAdmin={isAdmin}
         onSuccess={handleSuccess}
-        onCancel={() => navigate(isAdmin ? '/admin' : '/submit')}
+        onCancel={() => navigate(isAdmin ? '/admin' : '/profile')}
       />
     </div>
   );

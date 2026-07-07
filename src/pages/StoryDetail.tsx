@@ -1,18 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import type { Story } from '../types';
+import type { Profile, Story } from '../types';
 import ReadingProgress from '../components/ReadingProgress';
 import StoryCard from '../components/StoryCard';
 import StoryMediaGallery from '../components/StoryMediaGallery';
+import StoryReactions from '../components/StoryReactions';
+import ShareButton from '../components/ShareButton';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { getStoryTeaser } from '../lib/storyTeaser';
 
 export default function StoryDetail() {
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
+  const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name'> | null>(null);
   const [related, setRelated] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const viewsCounted = useRef(false);
+
+  usePageMeta({
+    title: story?.title ?? 'Story',
+    description: story ? getStoryTeaser(story, 160) : undefined,
+    image: story?.image_url,
+    path: story ? `/story/${story.id}` : id ? `/story/${id}` : undefined,
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -37,9 +49,10 @@ export default function StoryDetail() {
         return;
       }
 
-      setStory(data);
+      setStory(data as Story);
       setLoading(false);
       fetchRelated(data.category, data.id);
+      fetchAuthor(data.user_id);
 
       if (!viewsCounted.current) {
         viewsCounted.current = true;
@@ -48,15 +61,22 @@ export default function StoryDetail() {
     }
 
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id]);
+
+  async function fetchAuthor(userId: string) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, display_name')
+      .eq('id', userId)
+      .maybeSingle();
+    if (data?.username) setAuthor(data as Pick<Profile, 'username' | 'display_name'>);
+  }
 
   async function fetchRelated(category: string, currentId: string) {
     const { data } = await supabase.from('stories').select('*').eq('status', 'approved')
-      .eq('category', category).neq('id', currentId).order('views', { ascending: false }).limit(3);
-    if (data) setRelated(data);
+      .eq('category', category).neq('id', currentId).order('like_count', { ascending: false }).limit(3);
+    if (data) setRelated(data as Story[]);
   }
 
   if (loading) {
@@ -82,11 +102,33 @@ export default function StoryDetail() {
       <Link to="/stories" className="story-back-link">&larr; Back to all stories</Link>
       <header className="story-header">
         <span className="story-category">{story.category}</span>
+        {story.is_editors_choice && (
+          <span className="story-badge-editors">Editor&apos;s Choice</span>
+        )}
         <h1 className="story-detail-title">{story.title}</h1>
+        {author?.username && (
+          <p className="story-author-line">
+            By{' '}
+            <Link to={`/writer/${author.username}`} className="story-author-link">
+              @{author.username}
+            </Link>
+            {author.display_name && author.display_name !== author.username && (
+              <span className="story-author-display"> ({author.display_name})</span>
+            )}
+          </p>
+        )}
         <div className="story-detail-meta">
           <span>{story.views.toLocaleString()} reads</span>
           <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        </div>
+        <div className="story-header-actions">
+          <StoryReactions
+            storyId={story.id}
+            authorId={story.user_id}
+            likeCount={story.like_count ?? 0}
+          />
+          <ShareButton title={story.title} text={getStoryTeaser(story, 120)} />
         </div>
       </header>
       <StoryMediaGallery story={story} />

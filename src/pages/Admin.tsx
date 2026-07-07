@@ -45,11 +45,29 @@ export default function Admin() {
 
     if (tab === 'pending') {
       setPending(data ?? []);
-      setPendingCount(data?.length ?? 0);
     } else {
       setAllStories(data ?? []);
     }
     setLoading(false);
+  }
+
+  async function toggleEditorsChoice(story: Story) {
+    setActionId(story.id);
+    const next = !story.is_editors_choice;
+    const { error: updateError } = await supabase.from('stories').update({
+      is_editors_choice: next,
+      editors_choice_at: next ? new Date().toISOString() : null,
+    }).eq('id', story.id);
+
+    if (updateError) {
+      setFeedback(`Failed: ${updateError.message}`);
+    } else {
+      const patch = { is_editors_choice: next, editors_choice_at: next ? new Date().toISOString() : null };
+      setAllStories((prev) => prev.map((s) => (s.id === story.id ? { ...s, ...patch } : s)));
+      setFeedback(next ? "Added to Editor's Choice." : "Removed from Editor's Choice.");
+      setTimeout(() => setFeedback(''), 4000);
+    }
+    setActionId(null);
   }
 
   async function updateStatus(id: string, status: StoryStatus) {
@@ -135,6 +153,16 @@ export default function Admin() {
                 >
                   Read &amp; moderate
                 </button>
+                {story.status === 'approved' && tab === 'all' && (
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${story.is_editors_choice ? 'btn-success' : 'btn-ghost'}`}
+                    disabled={actionId === story.id}
+                    onClick={() => toggleEditorsChoice(story)}
+                  >
+                    {story.is_editors_choice ? "Editor's ✓" : "Editor's Choice"}
+                  </button>
+                )}
               </div>
             </article>
           ))}
