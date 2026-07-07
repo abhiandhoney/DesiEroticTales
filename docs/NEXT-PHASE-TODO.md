@@ -68,7 +68,10 @@
 - [x] Smoke test: sign-in, edit profile + avatar, follow writer, share story
 - [x] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`) — never commit real email
 - [x] Upload admin avatar: `public/assets/admin-avatar-unisex.jpg`
+- [x] Run migration `005_story_reactions.sql` on live Supabase
+- [x] Run migration `012_seo_slugs_tags.sql` on live Supabase (verified July 7, 2026)
 - [ ] Run migration `010_card_cover.sql` on live Supabase
+- [ ] Run migration `011_security_hardening.sql` on live Supabase
 
 ---
 
