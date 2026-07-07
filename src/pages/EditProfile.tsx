@@ -12,6 +12,7 @@ import {
 import { BIO_MAX_LENGTH } from '../types';
 import PageHeader from '../components/PageHeader';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { accountDisplayLabel } from '../lib/privacy';
 
 export default function EditProfile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -26,7 +27,7 @@ export default function EditProfile() {
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const displayLabel = displayName || username || user?.email?.split('@')[0] || 'Writer';
+  const displayLabel = displayName || username || accountDisplayLabel(user?.email, profile?.username) || 'Writer';
   const usernameChanged = normalizeUsername(username) !== (profile?.username ?? '');
   const usernameLocked =
     usernameChanged &&

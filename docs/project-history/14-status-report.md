@@ -171,7 +171,7 @@
 |------|--------|
 | Supabase SQL migration run in dashboard | Not confirmed |
 | Google OAuth enabled in Supabase | Not confirmed |
-| `VITE_ADMIN_EMAIL` set to abhi.and.honey@gmail.com | Done (code/docs) — set in Cloudflare Build vars too |
+| `VITE_ADMIN_EMAIL` set to <your-admin-email> | Done (code/docs) — set in Cloudflare Build vars too |
 | Admin role assigned in `profiles` table | Not confirmed |
 | Cloudflare Pages env vars (`VITE_SUPABASE_URL`, etc.) | Not confirmed |
 | Adsterra ad scripts | Not Done (placeholders only) |
@@ -237,7 +237,7 @@ Additional commits may exist locally (Telugu/character fixes) — verify with `g
 5. **Make yourself admin** — after first login:
    ```sql
    UPDATE profiles SET role = 'admin'
-   WHERE id = (SELECT id FROM auth.users WHERE email = 'abhi.and.honey@gmail.com');
+   WHERE id = (SELECT id FROM auth.users WHERE email = '<your-admin-email>');
    ```
 6. **Test flow** — Sign in → Submit story → Approve in Admin → See on Home
 

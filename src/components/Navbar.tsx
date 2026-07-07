@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, signInWithGoogle } from '../hooks/useAuth';
+import { accountDisplayLabel } from '../lib/privacy';
 import UserMenu from './UserMenu';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
@@ -52,7 +53,7 @@ export default function Navbar() {
     }
   }
 
-  const displayUsername = profile?.username ?? user?.email?.split('@')[0] ?? 'user';
+  const displayUsername = accountDisplayLabel(user?.email, profile?.username, profile?.display_name);
 
   return (
     <nav className="navbar">

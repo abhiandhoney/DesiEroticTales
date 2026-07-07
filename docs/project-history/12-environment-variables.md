@@ -5,7 +5,7 @@
 ```env
 VITE_SUPABASE_URL=https://totwotuotvhpwturwgkc.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_1bouZE0Nz3MVLiQmH4hW8Q_obbNmhAl
-VITE_ADMIN_EMAIL=abhi.and.honey@gmail.com
+VITE_ADMIN_EMAIL=<your-admin-email>
 ```
 
 ## Variable reference
@@ -42,9 +42,9 @@ Set the same three variables in **Cloudflare Pages → Settings → Environment 
 ```env
 VITE_SUPABASE_URL=https://totwotuotvhpwturwgkc.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key_here
-VITE_ADMIN_EMAIL=abhi.and.honey@gmail.com
+VITE_ADMIN_EMAIL=<your-admin-email>
 ```
 
 ## Action required
 
-Admin email is set to `abhi.and.honey@gmail.com` — also add this in Cloudflare Build variables.
+Admin email is set to `<your-admin-email>` — also add this in Cloudflare Build variables.

@@ -111,6 +111,11 @@ export default function StoryForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (mode === 'edit' && !window.confirm('Save changes to this story?')) {
+      return;
+    }
+
     if (title.trim().length < 5) {
       setError('Title must be at least 5 characters.');
       return;

@@ -136,7 +136,9 @@ export default function Admin() {
               <div className="admin-card-header">
                 <span className={`status-badge status-${story.status}`}>{story.status}</span>
                 <span className="admin-card-date">
-                  {new Date(story.created_at).toLocaleDateString()}
+                  {story.updated_at && story.updated_at !== story.created_at
+                    ? `Updated ${new Date(story.updated_at).toLocaleDateString()}`
+                    : new Date(story.created_at).toLocaleDateString()}
                 </span>
               </div>
               <h3 className="admin-card-title">{story.title}</h3>

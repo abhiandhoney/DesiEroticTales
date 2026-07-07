@@ -72,9 +72,11 @@ export default function EditStory() {
             <Link to={isAdmin ? '/admin' : '/profile'} className="btn btn-primary">
               {isAdmin ? 'Back to Admin' : 'Back to Profile'}
             </Link>
-            <Link to={`/story/${story?.id}`} className="btn btn-ghost">
-              View Story
-            </Link>
+            {story?.status === 'approved' && (
+              <Link to={`/story/${story!.id}`} className="btn btn-ghost">
+                View live
+              </Link>
+            )}
           </div>
         </div>
       </div>

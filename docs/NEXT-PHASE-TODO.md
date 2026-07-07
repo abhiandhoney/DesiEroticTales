@@ -1,7 +1,7 @@
 # Next Phase — Implementation TODO
 
 **Last updated:** July 7, 2026  
-**Prerequisite:** Run Supabase migrations `004`–`008` before testing social features.
+**Prerequisite:** Run Supabase migrations `004`–`009` before testing social features.
 
 ---
 
@@ -46,8 +46,25 @@
 
 ---
 
+## P5 — Edit flow, teaser & permissions (July 7)
+
+- [x] P5-01 Writers: Edit only on pending/rejected (not approved) — UI + `EditStory.tsx`
+- [x] P5-02 Admin: can edit any story + change status — `StoryForm` admin status field
+- [x] P5-03 RLS: writers update own pending/rejected only — migration `009_story_edit_rls.sql`
+- [x] P5-04 Teaser field in Submit/Edit form, StoryCard, Home, Stories search
+- [x] P5-05 Save confirmation on edit (`window.confirm`)
+- [x] P5-06 Cancel button in edit mode (reuses `StoryForm`)
+- [x] P5-07 `updated_at` on stories + display on Profile/Admin
+- [x] P5-08 Admin email masked in UI (`src/lib/privacy.ts`)
+- [ ] P5-09 E2E smoke test on live Supabase (submit → edit pending → reject → resubmit)
+
+**Status:** 🔄 Code complete — needs live DB test
+
+---
+
 ## Deploy checklist
 
-- [ ] Run migrations `004`–`008` in Supabase SQL Editor (in order)
+- [ ] Run migrations `004`–`009` in Supabase SQL Editor (in order)
 - [ ] Smoke test: sign-in, edit profile + avatar, follow writer, share story
-- [ ] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`)
+- [ ] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`) — never commit real email
+- [ ] Upload admin avatar: `public/assets/admin-avatar-unisex.jpg`

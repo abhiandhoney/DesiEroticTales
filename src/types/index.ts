@@ -33,6 +33,7 @@ export interface Story {
   is_editors_choice: boolean;
   editors_choice_at: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 export const STORY_CATEGORIES = [

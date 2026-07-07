@@ -46,6 +46,6 @@ npm run build        # outputs dist/ for Cloudflare Pages
 
 1. **Supabase SQL migration** — run `supabase/migrations/001_initial_schema.sql` in dashboard if not done
 2. **Google OAuth** — enable in Supabase Auth providers
-3. **Admin email** — `abhi.and.honey@gmail.com` (set in Cloudflare Build vars too)
+3. **Admin email** — `<your-admin-email>` (set in Cloudflare Build vars too)
 4. **Cloudflare tunnel credentials** — `~/.cloudflared/*.json` was missing last check
 5. **GitHub push** — commits exist locally; push attempted multiple times; user logged into `gh` CLI

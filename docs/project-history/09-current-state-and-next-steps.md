@@ -21,7 +21,7 @@
 - [ ] Git push to `origin main` (blocked until gh auth — user says now fixed)
 - [ ] Supabase migration executed in dashboard
 - [ ] Google OAuth provider enabled in Supabase
-- [x] `VITE_ADMIN_EMAIL` set to abhi.and.honey@gmail.com (add to Cloudflare Build vars)
+- [x] `VITE_ADMIN_EMAIL` set to <your-admin-email> (add to Cloudflare Build vars)
 - [ ] Admin role assigned in `profiles` table
 - [ ] Cloudflare tunnel credentials JSON placed
 - [ ] Cloudflare Pages project connected to GitHub repo

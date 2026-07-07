@@ -9,6 +9,7 @@ import type { Story, StoryStatus } from '../types';
 import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { accountDisplayLabel, displayUserEmail } from '../lib/privacy';
 
 type Tab = 'all' | StoryStatus;
 
@@ -66,7 +67,7 @@ export default function Profile() {
     );
   }
 
-  const displayName = profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'Writer';
+  const displayName = accountDisplayLabel(user?.email, profile?.username, profile?.display_name) || 'Writer';
   const pendingCount = myStories.filter((s) => s.status === 'pending').length;
   const approvedCount = myStories.filter((s) => s.status === 'approved').length;
   const rejectedCount = myStories.filter((s) => s.status === 'rejected').length;
@@ -92,7 +93,7 @@ export default function Profile() {
         <div className="profile-info">
           <h2 className="profile-name">{displayName}</h2>
           {profile?.username && <p className="profile-handle">@{profile.username}</p>}
-          <p className="profile-email">{user?.email}</p>
+          <p className="profile-email">{displayUserEmail(user?.email)}</p>
           <p className="profile-role">{profile?.role === 'admin' ? 'Admin & Writer' : 'Writer'}</p>
         </div>
         <div className="profile-stats">
@@ -207,7 +208,10 @@ export default function Profile() {
                   </div>
                   <p className="my-submission-meta">
                     {story.category} &middot;{' '}
-                    {new Date(story.created_at).toLocaleDateString()}
+                    Submitted {new Date(story.created_at).toLocaleDateString()}
+                    {story.updated_at && story.updated_at !== story.created_at && (
+                      <> &middot; Updated {new Date(story.updated_at).toLocaleDateString()}</>
+                    )}
                     {getStoryMediaUrls(story).length > 0 && (
                       <> &middot; {getStoryMediaUrls(story).length} photos</>
                     )}
