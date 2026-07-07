@@ -12,6 +12,8 @@ import { estimateReadTime, formatReadTime } from '../lib/readTime';
 import { useStoryLoader } from '../hooks/useStoryLoader';
 import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
 import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
+import { storyPageMeta } from '../lib/seoMeta';
+import CategoryNav from '../components/CategoryNav';
 import AdSlot from '../components/AdSlot';
 import DisqusComments from '../components/DisqusComments';
 import NotFound from './NotFound';
@@ -37,20 +39,21 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
   });
 
   const canonicalPath = story?.slug ? getStoryCanonicalPath(story) : undefined;
-  const teaser = story ? getStoryTeaser(story, 160) : undefined;
+  const seo = story ? storyPageMeta(story) : null;
 
   usePageMeta({
-    title: story?.title ?? 'Story',
-    description: teaser,
+    title: seo?.title ?? 'Story',
+    description: seo?.description,
+    keywords: seo?.keywords,
     image: story ? getCardImageUrl(story) : undefined,
     path: canonicalPath,
     canonical: canonicalPath ? absoluteUrl(canonicalPath) : undefined,
     type: 'article',
-    jsonLd: story
+    jsonLd: story && seo
       ? [
           buildArticleJsonLd(story, {
             authorName: author?.username ? `@${author.username}` : undefined,
-            description: teaser ?? '',
+            description: seo.description,
             image: getCardImageUrl(story),
           }),
           buildBreadcrumbJsonLd(storyBreadcrumbs(story, author?.username ?? undefined)),
@@ -157,6 +160,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
       <AdSlot slot="story-bottom" className="ad-slot-story-bottom" />
       <DisqusComments story={story} />
       <RelatedStoriesSection storyId={story.id} category={story.category} />
+      <CategoryNav title={`More ${story.category} stories`} activeCategory={story.category} />
     </article>
   );
 }

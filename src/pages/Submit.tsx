@@ -2,10 +2,19 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import StoryForm from '../components/StoryForm';
 import { useAuth } from '../hooks/useAuth';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { SUBMIT_META } from '../lib/seoMeta';
 
 export default function Submit() {
   const { user } = useAuth();
   const [success, setSuccess] = useState(false);
+
+  usePageMeta({
+    title: SUBMIT_META.title,
+    description: SUBMIT_META.description,
+    path: SUBMIT_META.path,
+    noIndex: SUBMIT_META.noIndex,
+  });
 
   function handleCreateSuccess() {
     setSuccess(true);

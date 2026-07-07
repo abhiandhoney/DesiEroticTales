@@ -11,6 +11,8 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { buildStorySearchFilter } from '../lib/search';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
+import { STORIES_META } from '../lib/seoMeta';
+import CategoryNav from '../components/CategoryNav';
 import AdSlot from '../components/AdSlot';
 
 const LIST_COLUMNS =
@@ -32,12 +34,13 @@ export default function Stories() {
   const PAGE_SIZE = 24;
 
   usePageMeta({
-    title: 'All Stories',
-    description: 'Browse every approved Telugu and Desi tale on DesiEroticTales.',
-    path: '/stories',
+    title: STORIES_META.title,
+    description: STORIES_META.description,
+    keywords: STORIES_META.keywords,
+    path: STORIES_META.path,
     jsonLd: [
       buildWebSiteJsonLd(window.location.origin),
-      buildCollectionJsonLd('All Stories', 'Browse approved tales on DesiEroticTales.', '/stories'),
+      buildCollectionJsonLd(STORIES_META.title, STORIES_META.description, STORIES_META.path),
     ],
   });
 
@@ -126,9 +129,9 @@ export default function Stories() {
   return (
     <div className="page stories-page">
       <header className="page-header">
-        <h1>All Stories</h1>
+        <h1>Telugu Sex Stories — All Categories</h1>
         <p className="page-subtitle">
-          Browse every approved tale | <span className="telugu-text" lang="te" title="All stories">అన్ని కథలు</span>
+          Browse kamakathalu, boothu kathalu &amp; desi tales | <span className="telugu-text" lang="te" title="All stories">అన్ని కథలు</span>
         </p>
       </header>
 
@@ -142,6 +145,7 @@ export default function Stories() {
         onSortChange={setSort}
       />
 
+      <CategoryNav title="Popular categories" />
       <AdSlot slot="stories-list" className="ad-slot-inline" />
 
       {error ? (

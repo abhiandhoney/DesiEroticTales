@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import type { Story, StoryStatus } from '../types';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import StoryReviewModal from '../components/StoryReviewModal';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { ADMIN_META } from '../lib/seoMeta';
 
 export default function Admin() {
   const [pending, setPending] = useState<Story[]>([]);
@@ -17,6 +19,13 @@ export default function Admin() {
   const [feedback, setFeedback] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | StoryStatus>('all');
+
+  usePageMeta({
+    title: ADMIN_META.title,
+    description: ADMIN_META.description,
+    path: ADMIN_META.path,
+    noIndex: ADMIN_META.noIndex,
+  });
 
   useEffect(() => {
     fetchStories();

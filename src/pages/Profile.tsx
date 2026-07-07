@@ -11,6 +11,8 @@ import PageHeader from '../components/PageHeader';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { accountDisplayLabel, displayUserEmail } from '../lib/privacy';
 import { getStoryPath } from '../lib/slug';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PROFILE_META } from '../lib/seoMeta';
 
 type Tab = 'all' | StoryStatus;
 
@@ -22,6 +24,13 @@ export default function Profile() {
   const [loadingFollowing, setLoadingFollowing] = useState(true);
   const [storiesError, setStoriesError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
+
+  usePageMeta({
+    title: PROFILE_META.title,
+    description: PROFILE_META.description,
+    path: PROFILE_META.path,
+    noIndex: PROFILE_META.noIndex,
+  });
 
   useEffect(() => {
     if (user) {

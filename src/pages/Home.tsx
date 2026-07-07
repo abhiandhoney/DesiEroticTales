@@ -14,6 +14,10 @@ import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 import { LikeStat } from '../components/LikeIcon';
 import { getStoryPath } from '../lib/slug';
 import AdSlot from '../components/AdSlot';
+import CategoryNav from '../components/CategoryNav';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { HOME_META } from '../lib/seoMeta';
+import { buildWebSiteJsonLd } from '../lib/seo';
 
 
 const LATEST_LIMIT = 8;
@@ -77,6 +81,14 @@ export default function Home() {
 
   const featured = storyOfWeek;
 
+  usePageMeta({
+    title: HOME_META.title,
+    description: HOME_META.description,
+    keywords: HOME_META.keywords,
+    path: HOME_META.path,
+    jsonLd: buildWebSiteJsonLd(window.location.origin),
+  });
+
   return (
     <div className="page home-page">
       <section className="hero">
@@ -87,8 +99,8 @@ export default function Home() {
           Stories that whisper after dark
         </h1>
         <p className="hero-subtitle">
-          Telugu & Desi tales of desire, tension, and slow-burn passion.<br />
-          Read free. Return often. Let the night unfold.
+          Free Telugu sex stories, kamakathalu &amp; boothu kathalu — aunty, akka chelli, office &amp; more.<br />
+          Desi erotic tales of desire and slow-burn passion. Read free. Return often.
         </p>
         <div className="hero-stats">
           <span>{totalCount > 0 ? `${totalCount}+` : 'New'} stories</span>
@@ -181,6 +193,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      <CategoryNav />
 
       <AdSlot slot="top-banner" className="ad-slot-top" />
 

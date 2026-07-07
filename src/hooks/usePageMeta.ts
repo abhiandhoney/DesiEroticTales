@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { DEFAULT_DESCRIPTION, SITE_NAME } from '../lib/seo';
+import { DEFAULT_DESCRIPTION, DEFAULT_KEYWORDS, SITE_NAME } from '../lib/seo';
 
 interface JsonLdObject {
   '@context'?: string;
@@ -14,6 +14,7 @@ interface PageMetaOptions {
   path?: string;
   type?: 'website' | 'article' | 'profile';
   canonical?: string;
+  keywords?: string;
   jsonLd?: JsonLdObject | JsonLdObject[];
   noIndex?: boolean;
 }
@@ -49,7 +50,7 @@ function upsertJsonLd(id: string, data: JsonLdObject | JsonLdObject[]) {
   el.textContent = JSON.stringify(data);
 }
 
-const DEFAULT_TITLE = `${SITE_NAME} - Telugu and Desi Stories`;
+const DEFAULT_TITLE = `${SITE_NAME} — Telugu Sex Stories & Kamakathalu`;
 
 export function usePageMeta({
   title,
@@ -58,17 +59,23 @@ export function usePageMeta({
   path,
   type = 'website',
   canonical,
+  keywords,
   jsonLd,
   noIndex,
 }: PageMetaOptions) {
   useEffect(() => {
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
     const desc = description ?? DEFAULT_DESCRIPTION;
+    const kw = keywords ?? DEFAULT_KEYWORDS;
     const url = canonical ?? (path ? `${window.location.origin}${path}` : window.location.href);
     const ogImage = image ?? `${window.location.origin}/favicon.svg`;
+    const robots = noIndex
+      ? 'noindex, nofollow'
+      : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
     document.title = fullTitle;
     upsertMeta('name', 'description', desc);
+    upsertMeta('name', 'keywords', kw);
     upsertLink('canonical', url);
     upsertMeta('property', 'og:title', fullTitle);
     upsertMeta('property', 'og:description', desc);
@@ -76,11 +83,12 @@ export function usePageMeta({
     upsertMeta('property', 'og:type', type);
     upsertMeta('property', 'og:image', ogImage);
     upsertMeta('property', 'og:site_name', SITE_NAME);
-    upsertMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary');
+    upsertMeta('property', 'og:locale', 'en_IN');
+    upsertMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary_large_image');
     upsertMeta('name', 'twitter:title', fullTitle);
     upsertMeta('name', 'twitter:description', desc);
     upsertMeta('name', 'twitter:image', ogImage);
-    upsertMeta('name', 'robots', noIndex ? 'noindex, nofollow' : 'index, follow');
+    upsertMeta('name', 'robots', robots);
 
     if (jsonLd) {
       upsertJsonLd('page-json-ld', jsonLd);
@@ -103,5 +111,5 @@ export function usePageMeta({
       upsertMeta('name', 'robots', 'index, follow');
       document.getElementById('page-json-ld')?.remove();
     };
-  }, [title, description, image, path, type, canonical, jsonLd, noIndex]);
+  }, [title, description, image, path, type, canonical, keywords, jsonLd, noIndex]);
 }

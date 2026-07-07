@@ -8,6 +8,9 @@ import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
 import { getCategoryPath, slugToCategory } from '../lib/slug';
+import { categoryPageMeta } from '../lib/seoMeta';
+import CategoryNav from '../components/CategoryNav';
+import { keywordsForCategory } from '../lib/seoKeywords';
 import AdSlot from '../components/AdSlot';
 
 const PAGE_SIZE = 24;
@@ -20,21 +23,19 @@ export default function CategoryArchive() {
   const [loading, setLoading] = useState(true);
   const [authors, setAuthors] = useState<AuthorMap>({});
 
-  const title = category ? `${category} Stories` : 'Category';
-  const description = category
-    ? `Browse ${category} tales on DesiEroticTales — Telugu and Desi slow-burn stories.`
-    : 'Story category archive.';
+  const meta = category ? categoryPageMeta(category) : null;
   const path = categorySlug ? getCategoryPath(category ?? categorySlug) : '/stories';
 
   usePageMeta({
-    title,
-    description,
+    title: meta?.title ?? 'Category',
+    description: meta?.description ?? 'Story category archive.',
+    keywords: category ? keywordsForCategory(category) : undefined,
     path,
     type: 'website',
-    jsonLd: category
+    jsonLd: category && meta
       ? [
           buildWebSiteJsonLd(window.location.origin),
-          buildCollectionJsonLd(title, description, path),
+          buildCollectionJsonLd(meta.title, meta.description, path),
         ]
       : undefined,
   });
@@ -98,12 +99,13 @@ export default function CategoryArchive() {
         <p className="story-back-link">
           <Link to="/stories">&larr; All stories</Link>
         </p>
-        <h1>{category}</h1>
+        <h1>{meta?.title ?? category}</h1>
         <p className="page-subtitle">
-          {totalCount.toLocaleString()} approved {totalCount === 1 ? 'tale' : 'tales'} in this category
+          {totalCount.toLocaleString()} free Telugu sex {totalCount === 1 ? 'story' : 'stories'} in {category}
         </p>
       </header>
 
+      <CategoryNav title="More categories" activeCategory={category} />
       <AdSlot slot="stories-list" />
 
       {loading ? (

@@ -2,9 +2,11 @@ import { getSiteOrigin } from './site';
 import { getStoryCanonicalPath, getCategoryPath, getWriterPath } from './slug';
 import type { Story } from '../types';
 
+import { HOME_META } from './seoMeta';
+
 export const SITE_NAME = 'DesiEroticTales';
-export const DEFAULT_DESCRIPTION =
-  'DesiEroticTales - Telugu and Desi erotic stories. Slow-burn tales of desire, free to read.';
+export const DEFAULT_DESCRIPTION = HOME_META.description;
+export const DEFAULT_KEYWORDS = HOME_META.keywords;
 
 export function absoluteUrl(path: string): string {
   const origin = typeof window !== 'undefined' ? getSiteOrigin() : (import.meta.env.VITE_SITE_URL ?? '');
@@ -46,7 +48,10 @@ export function buildArticleJsonLd(
     url,
     mainEntityOfPage: url,
     articleSection: story.category,
-    keywords: (story.tags ?? []).join(', ') || undefined,
+    keywords: (story.tags ?? []).join(', ') || story.category,
+    inLanguage: 'te',
+    isAccessibleForFree: true,
+    publisher: { '@type': 'Organization', name: SITE_NAME },
   };
 }
 

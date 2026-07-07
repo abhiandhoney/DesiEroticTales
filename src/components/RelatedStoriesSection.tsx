@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCategoryPath } from '../lib/slug';
 import type { Story } from '../types';
 import StoryCard from './StoryCard';
 import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
@@ -82,6 +84,9 @@ export default function RelatedStoriesSection({ storyId, category }: RelatedStor
           authors={authors}
         />
       )}
+      <p className="related-stories-category-link">
+        <Link to={getCategoryPath(category)}>View all {category} Telugu sex stories &rarr;</Link>
+      </p>
     </div>
   );
 }

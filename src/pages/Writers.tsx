@@ -4,10 +4,24 @@ import { fetchWriterLeaderboard, type LeaderboardEntry } from '../lib/rankings';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { WRITERS_META } from '../lib/seoMeta';
+import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
 
 export default function Writers() {
   const [writers, setWriters] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  usePageMeta({
+    title: WRITERS_META.title,
+    description: WRITERS_META.description,
+    keywords: WRITERS_META.keywords,
+    path: WRITERS_META.path,
+    jsonLd: [
+      buildWebSiteJsonLd(window.location.origin),
+      buildCollectionJsonLd(WRITERS_META.title, WRITERS_META.description, WRITERS_META.path),
+    ],
+  });
 
   useEffect(() => {
     fetchWriterLeaderboard(30).then((data) => {
@@ -19,8 +33,8 @@ export default function Writers() {
   return (
     <div className="page writers-page">
       <PageHeader
-        title="Top Writers"
-        subtitle="Ranked by total likes on published stories"
+        title="Top Telugu Story Writers"
+        subtitle="Rachayitalu ranked by reader appreciations — follow your favourite kamakathalu writers"
       />
 
       {loading ? (

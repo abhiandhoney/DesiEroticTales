@@ -10,6 +10,7 @@ import { useAuth, signInWithGoogle } from '../hooks/useAuth';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildPersonJsonLd, buildWebSiteJsonLd } from '../lib/seo';
 import { getWriterPath } from '../lib/slug';
+import { writerPageMeta } from '../lib/seoMeta';
 
 export default function WriterProfile() {
   const { username } = useParams<{ username: string }>();
@@ -23,9 +24,14 @@ export default function WriterProfile() {
 
   const follow = useFollow({ writerId: profile?.id ?? '' });
 
+  const writerSeo = profile?.username
+    ? writerPageMeta(profile.username, profile.display_name, profile.bio)
+    : null;
+
   usePageMeta({
-    title: profile ? `@${profile.username}` : 'Writer',
-    description: profile?.bio?.slice(0, 160) || `Stories by @${username}`,
+    title: writerSeo?.title ?? 'Writer',
+    description: writerSeo?.description,
+    keywords: writerSeo?.keywords,
     path: username ? getWriterPath(username) : undefined,
     type: 'profile',
     jsonLd: profile?.username
