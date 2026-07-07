@@ -1,6 +1,7 @@
 import { signInWithGoogle } from '../hooks/useAuth';
 import { useStoryReaction } from '../hooks/useStoryReaction';
 import type { StoryReaction } from '../types';
+import { LikeIcon, LikeStat } from './LikeIcon';
 
 interface StoryReactionsProps {
   storyId: string;
@@ -26,10 +27,12 @@ export function StoryReactionsBar({
   busy,
   onToggle,
 }: StoryReactionsBarProps) {
+  const isLiked = userReaction === 'like';
+
   if (isOwnStory) {
     return (
       <div className="story-reactions story-reactions-readonly">
-        <span className="reaction-stat" title="Likes on your story">👍 {likes.toLocaleString()}</span>
+        <LikeStat count={likes} title="Likes on your story" active={likes > 0} />
       </div>
     );
   }
@@ -37,13 +40,13 @@ export function StoryReactionsBar({
   if (!userId) {
     return (
       <div className="story-reactions">
-        <span className="reaction-stat">👍 {likes.toLocaleString()}</span>
+        <LikeStat count={likes} />
         <button
           type="button"
-          className="btn btn-ghost btn-sm"
+          className="like-btn like-btn--signin"
           onClick={() => signInWithGoogle(window.location.pathname)}
         >
-          Sign in to like
+          Sign in to appreciate
         </button>
       </div>
     );
@@ -53,13 +56,15 @@ export function StoryReactionsBar({
     <div className="story-reactions">
       <button
         type="button"
-        className={`reaction-btn ${userReaction === 'like' ? 'active-like' : ''}`}
+        className={`like-btn ${isLiked ? 'like-btn--active' : ''}`}
         onClick={() => onToggle('like')}
         disabled={busy}
-        aria-pressed={userReaction === 'like'}
-        aria-label={`Like story (${likes} likes)`}
+        aria-pressed={isLiked}
+        aria-label={isLiked ? `Remove appreciation (${likes} likes)` : `Appreciate this story (${likes} likes)`}
       >
-        👍 <span>{likes.toLocaleString()}</span>
+        <LikeIcon filled={isLiked} />
+        <span className="like-btn__label">{isLiked ? 'Appreciated' : 'Appreciate'}</span>
+        <span className="like-btn__count">{likes.toLocaleString()}</span>
       </button>
     </div>
   );

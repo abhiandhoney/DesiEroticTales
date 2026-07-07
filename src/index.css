@@ -189,7 +189,12 @@ a.user-menu-item { text-decoration: none; }
 .featured-story-body { padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; gap: 0.5rem; }
 .featured-story-title { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.25; }
 .featured-story-teaser { color: var(--text-muted); font-size: var(--text-sm); line-height: 1.6; }
-.featured-story-cta { color: var(--accent-gold-soft); font-size: var(--text-sm); margin-top: 0.5rem; }
+.featured-story-cta {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  color: var(--accent-gold-soft); font-size: var(--text-sm); margin-top: 0.5rem;
+}
+.featured-story-cta .like-stat { color: var(--accent-gold-soft); }
+.featured-story-cta .like-icon { color: var(--accent-gold); }
 .section-cta { text-align: center; margin-top: var(--space-8); }
 .results-meta { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4); }
 .page-header-actions { margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
@@ -207,7 +212,7 @@ a.user-menu-item { text-decoration: none; }
 }
 .input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--accent-red); }
 .input:focus-visible, .select:focus-visible, .textarea:focus-visible { box-shadow: var(--focus-ring); }
-.btn:focus-visible, .nav-link:focus-visible, .tab-btn:focus-visible, .media-thumb:focus-visible {
+.btn:focus-visible, .like-btn:focus-visible, .nav-link:focus-visible, .tab-btn:focus-visible, .media-thumb:focus-visible {
   outline: none; box-shadow: var(--focus-ring);
 }
 .skip-link {
@@ -639,18 +644,58 @@ a.user-menu-item { text-decoration: none; }
   display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
   justify-content: center; margin-top: 1rem;
 }
-.story-reactions-readonly { opacity: 0.85; }
-.reaction-btn {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.45rem 0.85rem; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--bg-elevated);
-  color: var(--text-primary); cursor: pointer; font-size: 0.9rem;
-  transition: border-color 0.2s, background 0.2s;
+.story-reactions-readonly { opacity: 0.9; }
+.like-icon {
+  width: 1.125rem; height: 1.125rem; flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.2s, transform 0.2s;
 }
-.reaction-btn:hover:not(:disabled) { border-color: var(--text-muted); }
-.reaction-btn.active-like { border-color: var(--success); background: rgba(51, 122, 91, 0.15); }
-.reaction-btn.active-dislike { border-color: var(--danger); background: rgba(156, 31, 54, 0.15); }
-.reaction-stat { font-size: 0.9rem; color: var(--text-muted); }
+.like-icon--filled { color: var(--accent-red); }
+.like-stat {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.875rem; color: var(--text-muted);
+}
+.like-stat__count { font-variant-numeric: tabular-nums; }
+.like-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1.1rem; border-radius: 999px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+  color: var(--text-primary); cursor: pointer;
+  font-family: var(--font-sans); font-size: 0.875rem; font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+}
+.like-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.like-btn:hover:not(:disabled) {
+  border-color: var(--accent-burgundy);
+  box-shadow: 0 0 14px rgba(158, 26, 56, 0.22);
+}
+.like-btn:hover:not(:disabled) .like-icon { color: var(--accent-gold-soft); }
+.like-btn--active {
+  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, rgba(92, 21, 40, 0.45), rgba(201, 162, 39, 0.1));
+  box-shadow: 0 0 18px rgba(201, 162, 39, 0.18);
+}
+.like-btn--active .like-icon { color: var(--accent-red); }
+.like-btn--active .like-btn__label { color: var(--accent-gold-soft); }
+.like-btn__label { color: var(--text-muted); transition: color 0.2s; }
+.like-btn__count {
+  font-variant-numeric: tabular-nums;
+  padding-left: 0.35rem; margin-left: 0.1rem;
+  border-left: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.like-btn--active .like-btn__count { border-left-color: rgba(201, 162, 39, 0.35); }
+.like-btn--signin {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.like-btn--signin:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
 .writer-profile-header {
   display: flex; gap: 1.5rem; align-items: flex-start;
   background: var(--bg-card); border: 1px solid var(--border);

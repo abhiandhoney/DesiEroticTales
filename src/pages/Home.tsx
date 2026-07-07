@@ -11,6 +11,7 @@ import { fetchEditorsChoice, fetchStoryOfTheMonth, fetchStoryOfTheWeek } from '.
 import SafeImage from '../components/SafeImage';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { LikeStat } from '../components/LikeIcon';
 
 
 const LATEST_LIMIT = 8;
@@ -118,7 +119,9 @@ export default function Home() {
               <h3 className="featured-story-title">{featured.title}</h3>
               <p className="featured-story-teaser">{getStoryTeaser(featured, 180)}</p>
               <span className="featured-story-cta">
-                👍 {(featured.like_count ?? 0).toLocaleString()} · Read now &rarr;
+                <LikeStat count={featured.like_count ?? 0} />
+                <span className="featured-story-cta-sep"> · </span>
+                Read now &rarr;
               </span>
             </div>
           </Link>
@@ -141,7 +144,9 @@ export default function Home() {
               <h3 className="featured-story-title">{storyOfMonth.title}</h3>
               <p className="featured-story-teaser">{getStoryTeaser(storyOfMonth, 180)}</p>
               <span className="featured-story-cta">
-                👍 {(storyOfMonth.like_count ?? 0).toLocaleString()} · Read now &rarr;
+                <LikeStat count={storyOfMonth.like_count ?? 0} />
+                <span className="featured-story-cta-sep"> · </span>
+                Read now &rarr;
               </span>
             </div>
           </Link>

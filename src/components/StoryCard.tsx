@@ -4,6 +4,7 @@ import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl, getStoryMediaUrls } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
 import SafeImage from './SafeImage';
+import { LikeStat } from './LikeIcon';
 
 interface StoryCardProps {
   story: Story;
@@ -53,7 +54,7 @@ export default function StoryCard({ story, badge, authorUsername }: StoryCardPro
           {likes > 0 && (
             <>
               <span className="story-meta-sep"> · </span>
-              <span>👍 {likes.toLocaleString()}</span>
+              <LikeStat count={likes} />
             </>
           )}
           {photoCount > 1 && (
