@@ -14,7 +14,7 @@ import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 import { LikeStat } from '../components/LikeIcon';
 import { getStoryPath } from '../lib/slug';
 import AdSlot from '../components/AdSlot';
-import CategoryNav from '../components/CategoryNav';
+
 import { usePageMeta } from '../hooks/usePageMeta';
 import { HOME_META } from '../lib/seoMeta';
 import { buildWebSiteJsonLd, buildOrganizationJsonLd, buildItemListJsonLd } from '../lib/seo';
