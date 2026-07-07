@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DesiEroticTales">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8c45c"/>
+      <stop offset="100%" stop-color="#c9a227"/>
+    </linearGradient>
+    <linearGradient id="burgundy" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5c1528"/>
+      <stop offset="100%" stop-color="#9e1a38"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0c0a0a" stroke="#2a2220" stroke-width="2"/>
+  <path d="M32 14c-1 0-2 .4-2.6 1.1L20 26.5V46c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V26.5L34.6 15.1C34 14.4 33 14 32 14z" fill="url(#burgundy)" opacity="0.35"/>
+  <path d="M22 28v16c0 1.1.9 2 2 2h4V26l-4 2z" fill="url(#burgundy)"/>
+  <path d="M42 28v18h-4V26l4 2z" fill="url(#gold)"/>
+  <path d="M30 24h4v20h-4z" fill="#2a2220"/>
+  <path d="M32 11c2.2 0 4 1.8 4 4 0 1.4-.7 2.6-1.8 3.3L32 20l-2.2-1.7C28.7 17.6 28 16.4 28 15c0-2.2 1.8-4 4-4z" fill="url(#gold)"/>
+  <circle cx="32" cy="15" r="1.2" fill="#f8f0e4"/>
+</svg>

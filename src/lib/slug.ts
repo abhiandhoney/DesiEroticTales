@@ -23,6 +23,8 @@ export const RESERVED_PATHS = new Set([
   'assets',
   'favicon.svg',
   'icons.svg',
+  'brand',
+  'site.webmanifest',
   'robots.txt',
   'sitemap.xml',
 ]);

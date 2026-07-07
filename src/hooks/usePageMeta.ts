@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { BRAND_OG_IMAGE } from '../lib/brand';
 import { DEFAULT_DESCRIPTION, DEFAULT_KEYWORDS, SITE_NAME } from '../lib/seo';
 
 interface JsonLdObject {
@@ -68,7 +69,7 @@ export function usePageMeta({
     const desc = description ?? DEFAULT_DESCRIPTION;
     const kw = keywords ?? DEFAULT_KEYWORDS;
     const url = canonical ?? (path ? `${window.location.origin}${path}` : window.location.href);
-    const ogImage = image ?? `${window.location.origin}/favicon.svg`;
+    const ogImage = image ?? `${window.location.origin}${BRAND_OG_IMAGE}`;
     const robots = noIndex
       ? 'noindex, nofollow'
       : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
@@ -104,7 +105,7 @@ export function usePageMeta({
       upsertMeta('property', 'og:description', DEFAULT_DESCRIPTION);
       upsertMeta('property', 'og:url', window.location.origin);
       upsertMeta('property', 'og:type', 'website');
-      upsertMeta('property', 'og:image', `${window.location.origin}/favicon.svg`);
+      upsertMeta('property', 'og:image', `${window.location.origin}${BRAND_OG_IMAGE}`);
       upsertMeta('name', 'twitter:card', 'summary');
       upsertMeta('name', 'twitter:title', DEFAULT_TITLE);
       upsertMeta('name', 'twitter:description', DEFAULT_DESCRIPTION);

@@ -64,9 +64,19 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand" onClick={() => setMenuOpen(false)}>
-          <span className="brand-des">Desi</span>
-          <span className="brand-erotic">Erotic</span>
-          <span className="brand-tales">Tales</span>
+          <img
+            src="/brand/logo-mark.svg"
+            alt=""
+            className="navbar-brand-icon"
+            width={32}
+            height={32}
+            decoding="async"
+          />
+          <span className="navbar-brand-text">
+            <span className="brand-des">Desi</span>
+            <span className="brand-erotic">Erotic</span>
+            <span className="brand-tales">Tales</span>
+          </span>
         </Link>
 
         <button
