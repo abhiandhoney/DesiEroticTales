@@ -4,6 +4,7 @@ import StoryForm from '../components/StoryForm';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
+import { getStoryPath } from '../lib/slug';
 
 export default function EditStory() {
   const { id } = useParams<{ id: string }>();
@@ -73,7 +74,7 @@ export default function EditStory() {
               {isAdmin ? 'Back to Admin' : 'Back to Profile'}
             </Link>
             {story?.status === 'approved' && (
-              <Link to={`/story/${story!.id}`} className="btn btn-ghost">
+              <Link to={getStoryPath(story!)} className="btn btn-ghost">
                 View live
               </Link>
             )}

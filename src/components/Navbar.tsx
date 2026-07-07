@@ -26,7 +26,12 @@ export default function Navbar() {
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     if (path === '/stories') {
-      return location.pathname === '/stories' || location.pathname.startsWith('/story/');
+      return (
+        location.pathname === '/stories'
+        || location.pathname.startsWith('/story/')
+        || location.pathname.startsWith('/category/')
+        || /^\/[^/]+\/[^/]+$/.test(location.pathname)
+      );
     }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };

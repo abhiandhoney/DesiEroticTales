@@ -7,6 +7,9 @@ import EmptyState from '../components/EmptyState';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useFollow } from '../hooks/useFollow';
 import { useAuth, signInWithGoogle } from '../hooks/useAuth';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { buildPersonJsonLd, buildWebSiteJsonLd } from '../lib/seo';
+import { getWriterPath } from '../lib/slug';
 
 export default function WriterProfile() {
   const { username } = useParams<{ username: string }>();
@@ -19,6 +22,16 @@ export default function WriterProfile() {
   const [signingIn, setSigningIn] = useState(false);
 
   const follow = useFollow({ writerId: profile?.id ?? '' });
+
+  usePageMeta({
+    title: profile ? `@${profile.username}` : 'Writer',
+    description: profile?.bio?.slice(0, 160) || `Stories by @${username}`,
+    path: username ? getWriterPath(username) : undefined,
+    type: 'profile',
+    jsonLd: profile?.username
+      ? [buildWebSiteJsonLd(window.location.origin), buildPersonJsonLd(profile.username, profile.display_name)]
+      : undefined,
+  });
 
   useEffect(() => {
     if (!username) return;

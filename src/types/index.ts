@@ -33,6 +33,8 @@ export interface Story {
   dislike_count: number;
   is_editors_choice: boolean;
   editors_choice_at: string | null;
+  slug: string | null;
+  tags: string[] | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -40,6 +42,7 @@ export interface Story {
 export const STORY_CATEGORIES = [
   'Aunty',
   'Akka-Chelli',
+  'Amma-Koduku',
   'Friend',
   'Office',
   'Fantasy',
@@ -47,6 +50,15 @@ export const STORY_CATEGORIES = [
   'Cousin',
   'College',
   'MILF',
+  'Pakkinti Valu',
+  'Panimanishi',
+  'Pinni-Pedhamma',
+  'Maradhalu',
+  'Vadhina',
+  'Gumpu',
+  'Yavannam',
+  'Audio',
+  'Photos',
   'Other',
 ] as const;
 

@@ -12,6 +12,8 @@ import SafeImage from '../components/SafeImage';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 import { LikeStat } from '../components/LikeIcon';
+import { getStoryPath } from '../lib/slug';
+import AdSlot from '../components/AdSlot';
 
 
 const LATEST_LIMIT = 8;
@@ -106,7 +108,7 @@ export default function Home() {
       {featured && !category && !loading && (
         <section className="featured-story">
           <h2 className="section-title">Story of the Week</h2>
-          <Link to={`/story/${featured.id}`} className="featured-story-card">
+          <Link to={getStoryPath(featured)} className="featured-story-card">
             <div className="featured-story-image">
               {getCardImageUrl(featured) ? (
                 <SafeImage src={getCardImageUrl(featured)!} alt={featured.title} loading="eager" />
@@ -131,7 +133,7 @@ export default function Home() {
       {storyOfMonth && storyOfMonth.id !== featured?.id && !category && !loading && (
         <section className="featured-story story-of-month">
           <h2 className="section-title">Story of the Month</h2>
-          <Link to={`/story/${storyOfMonth.id}`} className="featured-story-card featured-story-card-alt">
+          <Link to={getStoryPath(storyOfMonth)} className="featured-story-card featured-story-card-alt">
             <div className="featured-story-image">
               {getCardImageUrl(storyOfMonth) ? (
                 <SafeImage src={getCardImageUrl(storyOfMonth)!} alt={storyOfMonth.title} loading="lazy" />
@@ -180,7 +182,7 @@ export default function Home() {
         </section>
       )}
 
-      <div className="ad-slot ad-slot-top" data-adsterra="top-banner">{/* ADSTERRA */}</div>
+      <AdSlot slot="top-banner" className="ad-slot-top" />
 
       <StoryFilters category={category} onCategoryChange={setCategory} />
 

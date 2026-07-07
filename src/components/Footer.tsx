@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { getSiteHostname } from '../lib/site';
+import AdSlot from './AdSlot';
 
 export default function Footer() {
   return (
@@ -20,6 +21,16 @@ export default function Footer() {
             <Link to="/">Home</Link>
             <Link to="/stories">Stories</Link>
             <Link to="/writers">Top Writers</Link>
+            <Link to="/contact">Contact</Link>
+          </nav>
+        </div>
+
+        <div className="footer-col">
+          <p className="footer-col-title">Legal</p>
+          <nav className="footer-nav" aria-label="Legal">
+            <Link to="/privacy-policy">Privacy</Link>
+            <Link to="/cookie-policy">Cookies</Link>
+            <Link to="/report-content">Report content</Link>
           </nav>
         </div>
 
@@ -38,7 +49,7 @@ export default function Footer() {
           </p>
           <p className="footer-note">Free to read · New tales added regularly</p>
         </div>
-        {/* ADSTERRA: Place ad script block here */}
+        <AdSlot slot="footer" />
       </div>
     </footer>
   );

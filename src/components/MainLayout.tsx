@@ -4,6 +4,7 @@ import Footer from './Footer';
 import AgeGate from './AgeGate';
 import { ToastProvider } from '../hooks/useToast';
 import { ConfirmProvider } from '../hooks/useConfirm';
+import CookieConsent from './CookieConsent';
 
 export default function MainLayout() {
   return (
@@ -17,6 +18,7 @@ export default function MainLayout() {
           <Outlet />
         </main>
         <Footer />
+        <CookieConsent />
       </div>
     </ToastProvider>
     </ConfirmProvider>

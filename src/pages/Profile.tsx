@@ -10,6 +10,7 @@ import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { accountDisplayLabel, displayUserEmail } from '../lib/privacy';
+import { getStoryPath } from '../lib/slug';
 
 type Tab = 'all' | StoryStatus;
 
@@ -219,7 +220,7 @@ export default function Profile() {
                   <p className="my-submission-preview">{getStoryTeaser(story, 120)}</p>
                   <div className="my-submission-actions">
                     {story.status === 'approved' && (
-                      <Link to={`/story/${story.id}`} className="btn btn-ghost btn-sm">
+                      <Link to={getStoryPath(story)} className="btn btn-ghost btn-sm">
                         View live
                       </Link>
                     )}

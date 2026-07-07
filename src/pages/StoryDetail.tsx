@@ -1,7 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import type { Profile, Story } from '../types';
+import { Link, useParams } from 'react-router-dom';
 import ReadingProgress from '../components/ReadingProgress';
 import StoryMediaGallery from '../components/StoryMediaGallery';
 import { useStoryReaction } from '../hooks/useStoryReaction';
@@ -12,74 +9,54 @@ import { useReadingPrefs } from '../hooks/useReadingPrefs';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
+import { useStoryLoader } from '../hooks/useStoryLoader';
+import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
+import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
+import AdSlot from '../components/AdSlot';
+import DisqusComments from '../components/DisqusComments';
+import NotFound from './NotFound';
 
-export default function StoryDetail() {
-  const { id } = useParams<{ id: string }>();
-  const [story, setStory] = useState<Story | null>(null);
-  const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name'> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const viewsCounted = useRef(false);
+interface StoryDetailInnerProps {
+  legacyId?: string;
+  categorySlug?: string;
+  storySlug?: string;
+}
+
+function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInnerProps) {
+  const { story, author, loading, error, storyId } = useStoryLoader({
+    legacyId,
+    categorySlug,
+    storySlug,
+  });
   const { contentClass } = useReadingPrefs();
   const reaction = useStoryReaction({
-    storyId: id ?? '',
+    storyId,
     authorId: story?.user_id ?? '',
     initialLikes: story?.like_count ?? 0,
     initialDislikes: 0,
   });
 
+  const canonicalPath = story?.slug ? getStoryCanonicalPath(story) : undefined;
+  const teaser = story ? getStoryTeaser(story, 160) : undefined;
+
   usePageMeta({
     title: story?.title ?? 'Story',
-    description: story ? getStoryTeaser(story, 160) : undefined,
+    description: teaser,
     image: story ? getCardImageUrl(story) : undefined,
-    path: story ? `/story/${story.id}` : id ? `/story/${id}` : undefined,
+    path: canonicalPath,
+    canonical: canonicalPath ? absoluteUrl(canonicalPath) : undefined,
+    type: 'article',
+    jsonLd: story
+      ? [
+          buildArticleJsonLd(story, {
+            authorName: author?.username ? `@${author.username}` : undefined,
+            description: teaser ?? '',
+            image: getCardImageUrl(story),
+          }),
+          buildBreadcrumbJsonLd(storyBreadcrumbs(story, author?.username ?? undefined)),
+        ]
+      : undefined,
   });
-
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    viewsCounted.current = false;
-
-    async function load() {
-      setLoading(true);
-      setError('');
-      const { data, error: err } = await supabase
-        .from('stories')
-        .select('*')
-        .eq('id', id)
-        .eq('status', 'approved')
-        .single();
-
-      if (cancelled) return;
-
-      if (err || !data) {
-        setError('Story not found or not yet approved.');
-        setLoading(false);
-        return;
-      }
-
-      setStory(data as Story);
-      setLoading(false);
-      fetchAuthor(data.user_id);
-
-      if (!viewsCounted.current) {
-        viewsCounted.current = true;
-        await supabase.rpc('increment_story_views', { story_id: id });
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, [id]);
-
-  async function fetchAuthor(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, display_name')
-      .eq('id', userId)
-      .maybeSingle();
-    if (data?.username) setAuthor(data as Pick<Profile, 'username' | 'display_name'>);
-  }
 
   if (loading) {
     return (
@@ -101,9 +78,18 @@ export default function StoryDetail() {
   return (
     <article className="page story-detail-page">
       <ReadingProgress />
+      <nav className="story-breadcrumbs" aria-label="Breadcrumb">
+        <Link to="/">Home</Link>
+        <span aria-hidden="true"> / </span>
+        <Link to={getCategoryPath(story.category)}>{story.category}</Link>
+        <span aria-hidden="true"> / </span>
+        <span>{story.title}</span>
+      </nav>
       <Link to="/stories" className="story-back-link">&larr; Back to all stories</Link>
       <header className="story-header">
-        <span className="story-category">{story.category}</span>
+        <Link to={getCategoryPath(story.category)} className="story-category story-category-link">
+          {story.category}
+        </Link>
         {story.is_editors_choice && (
           <span className="story-badge-editors">Editor&apos;s Choice</span>
         )}
@@ -111,7 +97,7 @@ export default function StoryDetail() {
         {author?.username && (
           <p className="story-author-line">
             By{' '}
-            <Link to={`/writer/${author.username}`} className="story-author-link">
+            <Link to={getWriterPath(author.username)} className="story-author-link">
               @{author.username}
             </Link>
             {author.display_name && author.display_name !== author.username && (
@@ -126,6 +112,13 @@ export default function StoryDetail() {
           <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
+        {story.tags && story.tags.length > 0 && (
+          <div className="story-tags">
+            {story.tags.map((tag) => (
+              <span key={tag} className="story-tag">#{tag}</span>
+            ))}
+          </div>
+        )}
         <StoryActionBar
           placement="header"
           likes={reaction.likes}
@@ -140,7 +133,7 @@ export default function StoryDetail() {
         />
       </header>
       <StoryMediaGallery story={story} />
-      <div className="ad-slot ad-slot-story-top" data-adsterra="story-top">{/* ADSTERRA */}</div>
+      <AdSlot slot="story-top" className="ad-slot-story-top" />
       <div className={`story-content ${contentClass}`}>
         {story.content.split(/\n\n+/).filter(Boolean).map((para, i) => (
           <p key={i} className="story-paragraph">{para}</p>
@@ -161,8 +154,26 @@ export default function StoryDetail() {
           shareText={getStoryTeaser(story, 120)}
         />
       </footer>
-      <div className="ad-slot ad-slot-story-bottom" data-adsterra="story-bottom">{/* ADSTERRA */}</div>
+      <AdSlot slot="story-bottom" className="ad-slot-story-bottom" />
+      <DisqusComments story={story} />
       <RelatedStoriesSection storyId={story.id} category={story.category} />
     </article>
   );
 }
+
+/** Legacy `/story/:id` — redirects to canonical slug when available. */
+export function StoryDetailLegacy() {
+  const { id } = useParams<{ id: string }>();
+  return <StoryDetailInner legacyId={id} />;
+}
+
+/** Kamakathalu-style `/:categorySlug/:storySlug`. */
+export function StoryDetailSlug() {
+  const { categorySlug, storySlug } = useParams<{ categorySlug: string; storySlug: string }>();
+  if (!categorySlug || !storySlug || RESERVED_PATHS.has(categorySlug)) {
+    return <NotFound />;
+  }
+  return <StoryDetailInner categorySlug={categorySlug} storySlug={storySlug} />;
+}
+
+export default StoryDetailLegacy;

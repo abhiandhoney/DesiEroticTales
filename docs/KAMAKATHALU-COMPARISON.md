@@ -482,18 +482,20 @@ Aunty, Akka-Chelli, Friend, Office, Fantasy, Neighbor, Cousin, College, MILF, Ot
 
 ## 18. Recommended Roadmap (Prioritized vs Kamakathalu)
 
-| Priority | Item | Closes gap |
-|----------|------|------------|
-| **1** | Prerender or SSR for story + writer pages | SEO (#33–34) |
-| **2** | `sitemap.xml`, `robots.txt`, canonical URLs | SEO |
-| **3** | Slug URLs + 301 from UUID | SEO slugs (#5) |
-| **4** | Wire live ads (Adsterra) | Monetization (#35) |
-| **5** | Tags + category archive routes | Taxonomy (#3–4, #7) |
-| **6** | Disqus or native comments | Comments (#11) |
-| **7** | Privacy, contact, report pages | Legal (#37–38) |
-| **8** | Full-text search + debounce | Search (#6) |
-| **9** | Expand categories (Telugu naming) | Taxonomy parity |
-| **10** | Cookie/consent banner if EU traffic | GDPR (#39) |
+| Priority | Item | Status |
+|----------|------|--------|
+| **1** | Prerender for story + writer + category pages (`scripts/generate-seo.mjs`) | ✅ July 7, 2026 |
+| **2** | `sitemap.xml`, `robots.txt`, canonical URLs + JSON-LD | ✅ |
+| **3** | Slug URLs `/:categorySlug/:storySlug` + legacy `/story/:id` redirect | ✅ Code — **run migration `012`** on Supabase |
+| **4** | Wire Adsterra (`AdSlot` + `VITE_ADSTERRA_SLOT_*` env vars) | ✅ Ready — add keys in Cloudflare |
+| **5** | Tags + `/category/:slug` archive routes | ✅ |
+| **6** | Disqus embed (`VITE_DISQUS_SHORTNAME`) | ✅ Ready — add shortname |
+| **7** | Privacy, contact, report pages | ✅ |
+| **8** | Full-text search + debounce on `/stories` | ✅ |
+| **9** | Expand categories (20 categories, Telugu-aligned slugs) | ✅ |
+| **10** | Cookie/consent banner | ✅ |
+
+**Deploy note:** Run `supabase/migrations/012_seo_slugs_tags.sql` on live DB, then rebuild so slug URLs and full sitemap populate.
 
 ---
 

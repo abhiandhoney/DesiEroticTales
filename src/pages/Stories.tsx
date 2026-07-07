@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import StoryCard from '../components/StoryCard';
@@ -6,28 +7,58 @@ import StoryFilters from '../components/StoryFilters';
 import ResultsMeta from '../components/ResultsMeta';
 import EmptyState from '../components/EmptyState';
 import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { buildStorySearchFilter } from '../lib/search';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
+import AdSlot from '../components/AdSlot';
+
+const LIST_COLUMNS =
+  'id, title, teaser, content, category, status, user_id, image_url, card_image_url, gallery_urls, views, like_count, dislike_count, is_editors_choice, editors_choice_at, slug, tags, created_at, updated_at';
 
 export default function Stories() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stories, setStories] = useState<Story[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState<'newest' | 'popular' | 'top_rated' | 'trending'>('newest');
   const [page, setPage] = useState(0);
   const [authors, setAuthors] = useState<AuthorMap>({});
+  const debouncedSearch = useDebouncedValue(search, 350);
   const PAGE_SIZE = 24;
+
+  usePageMeta({
+    title: 'All Stories',
+    description: 'Browse every approved Telugu and Desi tale on DesiEroticTales.',
+    path: '/stories',
+    jsonLd: [
+      buildWebSiteJsonLd(window.location.origin),
+      buildCollectionJsonLd('All Stories', 'Browse approved tales on DesiEroticTales.', '/stories'),
+    ],
+  });
 
   useEffect(() => {
     setPage(0);
     fetchStories(true);
-  }, [category, sort, search]);
+  }, [category, sort, debouncedSearch]);
 
   useEffect(() => {
     if (page > 0) fetchStories(false);
   }, [page]);
+
+  useEffect(() => {
+    const next = debouncedSearch.trim();
+    const params = new URLSearchParams(searchParams);
+    const current = params.get('q') ?? '';
+    if (next === current) return;
+    if (next) params.set('q', next);
+    else params.delete('q');
+    setSearchParams(params, { replace: true });
+  }, [debouncedSearch, searchParams, setSearchParams]);
 
   async function fetchStories(reset = false) {
     if (reset) {
@@ -43,15 +74,14 @@ export default function Stories() {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'approved');
 
-    let query = supabase.from('stories').select('*').eq('status', 'approved');
+    let query = supabase.from('stories').select(LIST_COLUMNS).eq('status', 'approved');
 
     if (category) {
       countQuery = countQuery.eq('category', category);
       query = query.eq('category', category);
     }
-    if (search.trim()) {
-      const q = `%${search}%`;
-      const orFilter = `title.ilike.${q},teaser.ilike.${q},category.ilike.${q}`;
+    if (debouncedSearch.trim()) {
+      const orFilter = buildStorySearchFilter(debouncedSearch);
       countQuery = countQuery.or(orFilter);
       query = query.or(orFilter);
     }
@@ -80,7 +110,7 @@ export default function Stories() {
       return;
     }
 
-    const list = data ?? [];
+    const list = (data ?? []) as Story[];
     setStories((prev) => {
       const next = reset ? list : [...prev, ...list];
       if (next.length) fetchStoryAuthors(next.map((s) => s.user_id)).then(setAuthors);
@@ -107,12 +137,12 @@ export default function Stories() {
         onSearchChange={setSearch}
         category={category}
         onCategoryChange={setCategory}
-        searchPlaceholder="Search by title or teaser..."
+        searchPlaceholder="Search title, teaser, category, or story text..."
         sort={sort}
         onSortChange={setSort}
       />
 
-      <div className="ad-slot ad-slot-inline" data-adsterra="stories-list">{/* ADSTERRA */}</div>
+      <AdSlot slot="stories-list" className="ad-slot-inline" />
 
       {error ? (
         <EmptyState

@@ -5,6 +5,7 @@ import { getCardImageUrl, getStoryMediaUrls } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
 import SafeImage from './SafeImage';
 import { LikeStat } from './LikeIcon';
+import { getStoryPath } from '../lib/slug';
 
 interface StoryCardProps {
   story: Story;
@@ -19,7 +20,7 @@ export default function StoryCard({ story, badge, authorUsername }: StoryCardPro
   const readMins = estimateReadTime(story.content);
 
   return (
-    <Link to={`/story/${story.id}`} className="story-card">
+    <Link to={getStoryPath(story)} className="story-card">
       <div className="story-card-image">
         {cardImage ? (
           <SafeImage src={cardImage} alt={story.title} loading="lazy" />

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { convertFileToWebP } from '../lib/imageProcessing';
 import { deleteStoryImages, uploadStoryImageBlob, uploadStoryImageBlobs } from '../lib/storyImages';
 import StoryMediaUploader, { type MediaUploadState } from './StoryMediaUploader';
+import { formatTags, parseTagsInput } from '../lib/slug';
 import {
   STORY_CATEGORIES,
   TEASER_MAX_LENGTH,
@@ -49,6 +50,7 @@ export default function StoryForm({
     (story?.category as StoryCategory) ?? STORY_CATEGORIES[0],
   );
   const [content, setContent] = useState(story?.content ?? '');
+  const [tagsInput, setTagsInput] = useState(formatTags(story?.tags));
   const [status, setStatus] = useState<StoryStatus>(story?.status ?? 'pending');
   const [mediaState, setMediaState] = useState<MediaUploadState>(emptyMediaState());
   const [submitting, setSubmitting] = useState(false);
@@ -179,6 +181,7 @@ export default function StoryForm({
           teaser: teaser.trim() || null,
           content: content.trim(),
           category,
+          tags: parseTagsInput(tagsInput),
           status: 'pending',
           user_id: userId,
           image_url: fullCoverUrl,
@@ -192,6 +195,7 @@ export default function StoryForm({
           teaser: teaser.trim() || null,
           content: content.trim(),
           category,
+          tags: parseTagsInput(tagsInput),
           image_url: fullCoverUrl,
           card_image_url: cardCoverUrl,
           gallery_urls: galleryUrls,
@@ -301,6 +305,20 @@ export default function StoryForm({
         <span className="char-count">
           {teaser.length}/{TEASER_MAX_LENGTH} characters
         </span>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="tags">
+          Tags <span className="label-optional">(comma-separated, max 8)</span>
+        </label>
+        <input
+          id="tags"
+          type="text"
+          className="input"
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          placeholder="telugu-sex-stories, aunty, ranku-kathalu"
+        />
       </div>
 
       <div className="form-group">

@@ -6,9 +6,16 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Stories from './pages/Stories';
-import StoryDetail from './pages/StoryDetail';
+import StoryDetail, { StoryDetailSlug } from './pages/StoryDetail';
 import WriterProfile from './pages/WriterProfile';
 import Writers from './pages/Writers';
+import CategoryArchive from './pages/CategoryArchive';
+import {
+  PrivacyPolicyPage,
+  CookiePolicyPage,
+  ContactPage,
+  ReportContentPage,
+} from './pages/LegalPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 
@@ -41,8 +48,14 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/stories" element={<Stories />} />
               <Route path="/story/:id" element={<StoryDetail />} />
+              <Route path="/category/:categorySlug" element={<CategoryArchive />} />
               <Route path="/writer/:username" element={<WriterProfile />} />
               <Route path="/writers" element={<Writers />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/report-content" element={<ReportContentPage />} />
+              <Route path="/:categorySlug/:storySlug" element={<StoryDetailSlug />} />
               <Route
                 path="/onboarding/username"
                 element={
