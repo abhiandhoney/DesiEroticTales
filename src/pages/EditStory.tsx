@@ -40,8 +40,8 @@ export default function EditStory() {
         setLoading(false);
         return;
       }
-      if (data.status !== 'pending' && data.status !== 'rejected') {
-        setError('You can only edit stories that are pending or rejected.');
+      if (data.status !== 'pending' && data.status !== 'rejected' && data.status !== 'draft') {
+        setError('You can only edit stories that are drafts, pending, or rejected.');
         setLoading(false);
         return;
       }

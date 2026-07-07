@@ -78,12 +78,14 @@ export default function Profile() {
   }
 
   const displayName = accountDisplayLabel(user?.email, profile?.username, profile?.display_name) || 'Writer';
+  const draftCount = myStories.filter((s) => s.status === 'draft').length;
   const pendingCount = myStories.filter((s) => s.status === 'pending').length;
   const approvedCount = myStories.filter((s) => s.status === 'approved').length;
   const rejectedCount = myStories.filter((s) => s.status === 'rejected').length;
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'All', count: myStories.length },
+    { id: 'draft', label: 'Drafts', count: draftCount },
     { id: 'approved', label: 'Live', count: approvedCount },
     { id: 'pending', label: 'Pending', count: pendingCount },
     { id: 'rejected', label: 'Rejected', count: rejectedCount },
@@ -231,6 +233,11 @@ export default function Profile() {
                     {story.status === 'approved' && (
                       <Link to={getStoryPath(story)} className="btn btn-ghost btn-sm">
                         View live
+                      </Link>
+                    )}
+                    {story.status === 'draft' && (
+                      <Link to={`/edit/${story.id}`} className="btn btn-primary btn-sm">
+                        Continue editing
                       </Link>
                     )}
                     {story.status === 'pending' && (

@@ -3,6 +3,7 @@ import type { Story } from '../types';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl, getStoryMediaUrls } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
+import { storyPlainText } from '../lib/richText';
 import SafeImage from './SafeImage';
 import { LikeStat } from './LikeIcon';
 import { getStoryPath } from '../lib/slug';
@@ -17,7 +18,7 @@ export default function StoryCard({ story, badge, authorUsername }: StoryCardPro
   const cardImage = getCardImageUrl(story);
   const photoCount = getStoryMediaUrls(story).length;
   const likes = story.like_count ?? 0;
-  const readMins = estimateReadTime(story.content);
+  const readMins = estimateReadTime(storyPlainText(story));
 
   return (
     <Link to={getStoryPath(story)} className="story-card">

@@ -1,6 +1,7 @@
 import { getStoryTeaser } from './storyTeaser';
 import { phraseForCategory, keywordsForCategory, PRIMARY_KEYWORDS, LLM_INTENT_PHRASES, categoryDescription } from './seoKeywords';
 import { estimateReadTime, formatReadTime } from './readTime';
+import { storyPlainText } from './richText';
 import type { Story } from '../types';
 
 export const SITE_BRAND = 'DesiEroticTales';
@@ -81,7 +82,7 @@ export function storyPageMeta(
 ) {
   const teaser = getStoryTeaser(story, 120);
   const phrase = phraseForCategory(story.category);
-  const readTime = formatReadTime(estimateReadTime(story.content));
+  const readTime = formatReadTime(estimateReadTime(storyPlainText(story)));
   const writerBit = opts?.authorUsername ? ` By @${opts.authorUsername}.` : '';
   const likesBit = story.like_count > 0 ? ` ${story.like_count} appreciations.` : '';
   const tagLine = story.tags?.length ? ` Tags: ${story.tags.join(', ')}.` : '';

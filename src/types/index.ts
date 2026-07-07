@@ -1,5 +1,5 @@
 export type UserRole = 'writer' | 'admin';
-export type StoryStatus = 'pending' | 'approved' | 'rejected';
+export type StoryStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 export type StoryReaction = 'like' | 'dislike';
 
 export interface Profile {
@@ -22,6 +22,8 @@ export interface Story {
   title: string;
   teaser: string | null;
   content: string;
+  content_json: Record<string, unknown> | null;
+  content_html: string | null;
   category: string;
   status: StoryStatus;
   user_id: string;
@@ -63,3 +65,19 @@ export const STORY_CATEGORIES = [
 ] as const;
 
 export type StoryCategory = (typeof STORY_CATEGORIES)[number];
+
+export interface Collection {
+  id: string;
+  user_id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CollectionStory {
+  collection_id: string;
+  story_id: string;
+  part_number: number;
+}

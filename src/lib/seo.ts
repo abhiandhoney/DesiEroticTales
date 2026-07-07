@@ -1,6 +1,7 @@
 import { getSiteOrigin } from './site';
 import { getStoryCanonicalPath, getCategoryPath, getWriterPath } from './slug';
 import { phraseForCategory } from './seoKeywords';
+import { storyPlainText } from './richText';
 import type { Story } from '../types';
 
 import { HOME_META } from './seoMeta';
@@ -15,8 +16,8 @@ export function absoluteUrl(path: string): string {
   return `${origin.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-export function storyWordCount(content: string): number {
-  const trimmed = content.trim();
+export function storyWordCount(story: Pick<Story, 'content' | 'content_json' | 'content_html'>): number {
+  const trimmed = storyPlainText(story).trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
@@ -60,7 +61,7 @@ export function buildArticleJsonLd(
   opts: { authorName?: string; authorUrl?: string; description: string; image?: string | null },
 ) {
   const url = absoluteUrl(getStoryCanonicalPath(story));
-  const words = storyWordCount(story.content);
+  const words = storyWordCount(story);
   const readMins = Math.max(1, Math.ceil(words / 200));
 
   return {

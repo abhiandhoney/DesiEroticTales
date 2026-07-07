@@ -81,8 +81,17 @@ function storyWordCount(content) {
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
+function stripHtml(html) {
+  return String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function storyPlainText(story) {
+  if (story.content_html) return stripHtml(story.content_html);
+  return story.content || '';
+}
+
 function storyDescription(story) {
-  const raw = story.teaser?.trim() || story.content || '';
+  const raw = story.teaser?.trim() || storyPlainText(story);
   return raw.replace(/\s+/g, ' ').trim().slice(0, 160);
 }
 
@@ -97,9 +106,11 @@ function buildStoryHighlights(story) {
 function buildStoryBodyHtml(story) {
   const desc = storyDescription(story);
   const highlights = buildStoryHighlights(story);
-  const words = storyWordCount(story.content);
+  const words = storyWordCount(storyPlainText(story));
   const readMins = Math.max(1, Math.ceil(words / 200));
-  const excerpt = escapeHtml((story.content || '').slice(0, 1200));
+  const excerpt = story.content_html
+    ? story.content_html.slice(0, 8000)
+    : escapeHtml((story.content || '').slice(0, 1200));
 
   return `
 <article itemscope itemtype="https://schema.org/Article">
@@ -124,7 +135,7 @@ function buildStoryBodyHtml(story) {
 
 function buildStoryJsonLd(story, canonical, siteUrl) {
   const desc = storyDescription(story);
-  const words = storyWordCount(story.content);
+  const words = storyWordCount(storyPlainText(story));
   const readMins = Math.max(1, Math.ceil(words / 200));
   return {
     '@context': 'https://schema.org',
@@ -211,7 +222,7 @@ async function main() {
   const shell = readDistShell();
 
   const fullSelect =
-    'id, title, teaser, content, category, slug, tags, updated_at, created_at';
+    'id, title, teaser, content, content_html, category, slug, tags, updated_at, created_at';
   const fallbackSelect = 'id, title, teaser, content, category, updated_at, created_at';
 
   let stories;

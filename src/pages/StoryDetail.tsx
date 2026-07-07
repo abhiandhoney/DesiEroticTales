@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ReadingProgress from '../components/ReadingProgress';
 import StoryMediaGallery from '../components/StoryMediaGallery';
@@ -10,8 +11,11 @@ import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
 import StorySummaryPanel from '../components/StorySummaryPanel';
-import StoryContent from '../components/StoryContent';
+import StoryRichContent from '../components/StoryRichContent';
+import CollectionNav from '../components/CollectionNav';
 import WriterCitationBlock from '../components/WriterCitationBlock';
+import { fetchStoryCollectionLink, type StoryCollectionLink } from '../lib/collections';
+import { storyPlainText } from '../lib/richText';
 import { useStoryLoader } from '../hooks/useStoryLoader';
 import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
 import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
@@ -34,6 +38,13 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
     storySlug,
   });
   const { contentClass } = useReadingPrefs();
+  const [collectionLink, setCollectionLink] = useState<StoryCollectionLink | null>(null);
+
+  useEffect(() => {
+    if (!story?.id) return;
+    fetchStoryCollectionLink(story.id).then(setCollectionLink).catch(() => setCollectionLink(null));
+  }, [story?.id]);
+
   const reaction = useStoryReaction({
     storyId,
     authorId: story?.user_id ?? '',
@@ -43,7 +54,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
 
   const canonicalPath = story?.slug ? getStoryCanonicalPath(story) : undefined;
   const seo = story ? storyPageMeta(story, { authorUsername: author?.username ?? undefined }) : null;
-  const readTimeLabel = story ? formatReadTime(estimateReadTime(story.content)) : '';
+  const readTimeLabel = story ? formatReadTime(estimateReadTime(storyPlainText(story))) : '';
 
   usePageMeta({
     title: seo?.title ?? 'Story',
@@ -114,7 +125,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
           </p>
         )}
         <div className="story-detail-meta">
-          <span>{formatReadTime(estimateReadTime(story.content))}</span>
+          <span>{readTimeLabel}</span>
           <span> | </span>
           <span>{story.views.toLocaleString()} reads</span>
           <span> | </span>
@@ -140,6 +151,13 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
           shareText={getStoryTeaser(story, 120)}
         />
       </header>
+      {collectionLink && (
+        <CollectionNav
+          link={collectionLink}
+          currentStoryId={story.id}
+          writerUsername={author?.username ?? undefined}
+        />
+      )}
       <StorySummaryPanel
         story={story}
         readTime={readTimeLabel}
@@ -149,7 +167,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
       />
       <StoryMediaGallery story={story} />
       <AdSlot slot="story-top" className="ad-slot-story-top" />
-      <StoryContent content={story.content} className={`story-content ${contentClass}`} />
+      <StoryRichContent story={story} className={`story-content ${contentClass}`} />
       {author?.username && (
         <WriterCitationBlock
           story={story}

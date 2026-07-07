@@ -10,6 +10,7 @@ import StoryDetail, { StoryDetailSlug } from './pages/StoryDetail';
 import WriterProfile from './pages/WriterProfile';
 import Writers from './pages/Writers';
 import CategoryArchive from './pages/CategoryArchive';
+import CollectionDetail from './pages/CollectionDetail';
 import {
   PrivacyPolicyPage,
   CookiePolicyPage,
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="/stories" element={<Stories />} />
               <Route path="/story/:id" element={<StoryDetail />} />
               <Route path="/category/:categorySlug" element={<CategoryArchive />} />
+              <Route path="/writer/:username/collection/:collectionSlug" element={<CollectionDetail />} />
               <Route path="/writer/:username" element={<WriterProfile />} />
               <Route path="/writers" element={<Writers />} />
               <Route path="/about" element={<AboutPage />} />
