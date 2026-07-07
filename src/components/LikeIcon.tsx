@@ -5,9 +5,10 @@ interface LikeIconProps {
 
 /** Heart icon for likes — no emoji. */
 export function LikeIcon({ filled = false, className = '' }: LikeIconProps) {
+  const classes = ['like-icon', filled ? 'like-icon--filled' : '', className].filter(Boolean).join(' ');
   return (
     <svg
-      className={`like-icon ${filled ? 'like-icon--filled' : ''} ${className}`.trim()}
+      className={classes}
       viewBox="0 0 24 24"
       aria-hidden="true"
       focusable="false"

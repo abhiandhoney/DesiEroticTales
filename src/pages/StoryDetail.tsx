@@ -4,9 +4,8 @@ import { supabase } from '../lib/supabase';
 import type { Profile, Story } from '../types';
 import ReadingProgress from '../components/ReadingProgress';
 import StoryMediaGallery from '../components/StoryMediaGallery';
-import { StoryReactionsBar } from '../components/StoryReactions';
 import { useStoryReaction } from '../hooks/useStoryReaction';
-import ShareButton from '../components/ShareButton';
+import StoryActionBar from '../components/StoryActionBar';
 import RelatedStoriesSection from '../components/RelatedStoriesSection';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useReadingPrefs } from '../hooks/useReadingPrefs';
@@ -127,17 +126,18 @@ export default function StoryDetail() {
           <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
-        <div className="story-header-actions">
-          <StoryReactionsBar
-            likes={reaction.likes}
-            userReaction={reaction.userReaction}
-            userId={reaction.userId}
-            isOwnStory={reaction.isOwnStory}
-            busy={reaction.busy}
-            onToggle={reaction.toggle}
-          />
-          <ShareButton title={story.title} text={getStoryTeaser(story, 120)} />
-        </div>
+        <StoryActionBar
+          placement="header"
+          likes={reaction.likes}
+          userReaction={reaction.userReaction}
+          userId={reaction.userId}
+          isOwnStory={reaction.isOwnStory}
+          busy={reaction.busy}
+          loading={reaction.loading}
+          onToggle={reaction.toggle}
+          shareTitle={story.title}
+          shareText={getStoryTeaser(story, 120)}
+        />
       </header>
       <StoryMediaGallery story={story} />
       <div className="ad-slot ad-slot-story-top" data-adsterra="story-top">{/* ADSTERRA */}</div>
@@ -148,15 +148,18 @@ export default function StoryDetail() {
       </div>
       <footer className="story-end-footer">
         <p className="story-end-prompt">Enjoyed this tale?</p>
-        <StoryReactionsBar
+        <StoryActionBar
+          placement="footer"
           likes={reaction.likes}
           userReaction={reaction.userReaction}
           userId={reaction.userId}
           isOwnStory={reaction.isOwnStory}
           busy={reaction.busy}
+          loading={reaction.loading}
           onToggle={reaction.toggle}
+          shareTitle={story.title}
+          shareText={getStoryTeaser(story, 120)}
         />
-        <ShareButton title={story.title} text={getStoryTeaser(story, 120)} />
       </footer>
       <div className="ad-slot ad-slot-story-bottom" data-adsterra="story-bottom">{/* ADSTERRA */}</div>
       <RelatedStoriesSection storyId={story.id} category={story.category} />
