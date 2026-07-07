@@ -3,7 +3,7 @@ import { DEFAULT_DESCRIPTION, DEFAULT_KEYWORDS, SITE_NAME } from '../lib/seo';
 
 interface JsonLdObject {
   '@context'?: string;
-  '@type'?: string;
+  '@type'?: string | string[];
   [key: string]: unknown;
 }
 

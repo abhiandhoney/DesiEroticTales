@@ -9,6 +9,9 @@ import { useReadingPrefs } from '../hooks/useReadingPrefs';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
+import StorySummaryPanel from '../components/StorySummaryPanel';
+import StoryContent from '../components/StoryContent';
+import WriterCitationBlock from '../components/WriterCitationBlock';
 import { useStoryLoader } from '../hooks/useStoryLoader';
 import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
 import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
@@ -39,7 +42,8 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
   });
 
   const canonicalPath = story?.slug ? getStoryCanonicalPath(story) : undefined;
-  const seo = story ? storyPageMeta(story) : null;
+  const seo = story ? storyPageMeta(story, { authorUsername: author?.username ?? undefined }) : null;
+  const readTimeLabel = story ? formatReadTime(estimateReadTime(story.content)) : '';
 
   usePageMeta({
     title: seo?.title ?? 'Story',
@@ -53,6 +57,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
       ? [
           buildArticleJsonLd(story, {
             authorName: author?.username ? `@${author.username}` : undefined,
+            authorUrl: author?.username ? getWriterPath(author.username) : undefined,
             description: seo.description,
             image: getCardImageUrl(story),
           }),
@@ -135,13 +140,26 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
           shareText={getStoryTeaser(story, 120)}
         />
       </header>
+      <StorySummaryPanel
+        story={story}
+        readTime={readTimeLabel}
+        author={author?.username
+          ? { username: author.username, display_name: author.display_name }
+          : undefined}
+      />
       <StoryMediaGallery story={story} />
       <AdSlot slot="story-top" className="ad-slot-story-top" />
-      <div className={`story-content ${contentClass}`}>
-        {story.content.split(/\n\n+/).filter(Boolean).map((para, i) => (
-          <p key={i} className="story-paragraph">{para}</p>
-        ))}
-      </div>
+      <StoryContent content={story.content} className={`story-content ${contentClass}`} />
+      {author?.username && (
+        <WriterCitationBlock
+          story={story}
+          author={{
+            username: author.username,
+            display_name: author.display_name,
+            bio: author.bio,
+          }}
+        />
+      )}
       <footer className="story-end-footer">
         <p className="story-end-prompt">Enjoyed this tale?</p>
         <StoryActionBar

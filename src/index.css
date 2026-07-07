@@ -1116,6 +1116,85 @@ button.action-btn { appearance: none; }
   font-family: var(--font-serif); line-height: 1.7;
 }
 
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.label-required { color: var(--accent-gold-soft); font-size: 0.85em; }
+
+.hero-subtitle-poetic {
+  font-family: var(--font-serif); font-style: italic;
+  color: var(--accent-gold-soft); margin-bottom: 0.5rem;
+}
+
+.story-summary-panel {
+  margin: 1.5rem 0 2rem; padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+.story-summary-heading {
+  font-family: var(--font-serif); font-size: 1.1rem;
+  color: var(--accent-gold-soft); margin: 0 0 0.5rem;
+}
+.story-summary-text { margin: 0 0 1rem; line-height: 1.65; color: var(--text-primary); }
+.story-highlights-heading {
+  font-size: 0.9rem; font-weight: 600; color: var(--text-muted);
+  margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.story-highlights-list {
+  margin: 0; padding-left: 1.25rem; color: var(--text-muted); font-size: 0.9rem;
+}
+.story-highlights-list li { margin-bottom: 0.25rem; }
+
+.story-section-title {
+  font-family: var(--font-serif); font-size: 1.35rem;
+  color: var(--accent-gold-soft); margin: 2rem 0 0.75rem;
+}
+
+.writer-citation-block {
+  margin: 2.5rem 0; padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.writer-citation-heading {
+  font-family: var(--font-serif); font-size: 1.15rem;
+  color: var(--accent-gold-soft); margin: 0 0 0.75rem;
+}
+.writer-citation-byline { margin: 0 0 0.5rem; }
+.writer-citation-bio { margin: 0 0 1rem; color: var(--text-muted); font-size: 0.95rem; }
+.writer-citation-subheading { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 0.35rem; }
+.writer-citation-text { margin: 0; font-size: 0.9rem; color: var(--text-muted); }
+.writer-citation-text cite { font-style: normal; }
+
+.site-overview {
+  max-width: var(--max-width); margin: 0 auto 2.5rem; padding: 0 1rem;
+  text-align: center;
+}
+.site-overview-title {
+  font-family: var(--font-serif); font-size: 1.5rem;
+  color: var(--accent-gold-soft); margin-bottom: 0.75rem;
+}
+.site-overview-lead {
+  max-width: 42rem; margin: 0 auto 1.25rem; line-height: 1.65; color: var(--text-muted);
+}
+.site-overview-subtitle {
+  font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;
+}
+.site-overview-categories {
+  list-style: none; padding: 0; margin: 0 0 1rem;
+  text-align: left; max-width: 36rem; margin-inline: auto;
+}
+.site-overview-categories li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+.site-overview-cat-link { color: var(--accent-gold-soft); text-decoration: none; font-weight: 500; }
+.site-overview-cat-link:hover { text-decoration: underline; }
+.site-overview-cat-desc { color: var(--text-muted); }
+.site-overview-cta { font-size: 0.9rem; color: var(--text-muted); }
+.site-overview-cta a { color: var(--accent-gold-soft); }
+
+.category-intro { margin-bottom: 1.5rem; }
+.category-intro-text { line-height: 1.65; color: var(--text-muted); margin-bottom: 0.5rem; }
+.category-intro-stats { font-size: 0.9rem; color: var(--text-muted); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

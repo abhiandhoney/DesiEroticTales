@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { ABOUT_META } from '../lib/seoMeta';
+import { buildOrganizationJsonLd, buildWebPageJsonLd } from '../lib/seo';
 
 interface LegalPageProps {
   title: string;
@@ -139,6 +141,67 @@ function ReportForm() {
       <button type="submit" className="btn btn-primary">Send report via email</button>
       {sent && <p className="form-hint">Your email client should open with the report draft.</p>}
     </form>
+  );
+}
+
+export function AboutPage() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  usePageMeta({
+    title: ABOUT_META.title,
+    description: ABOUT_META.description,
+    keywords: ABOUT_META.keywords,
+    path: ABOUT_META.path,
+    jsonLd: [
+      buildOrganizationJsonLd(origin),
+      buildWebPageJsonLd(ABOUT_META.title, ABOUT_META.description, ABOUT_META.path),
+    ],
+  });
+
+  return (
+    <div className="page legal-page about-page">
+      <header className="page-header">
+        <h1>About DesiEroticTales</h1>
+        <p className="page-subtitle">Slow-burn Telugu and Desi erotic fiction — free to read.</p>
+      </header>
+      <div className="legal-content">
+        <h2>Our mission</h2>
+        <p>
+          DesiEroticTales publishes high-quality, slow-burn Telugu and Desi erotic stories with
+          AI-generated images. We focus on emotional, realistic kathalu — the kind readers ask AI
+          tools about: &ldquo;best slow burn Telugu stories&rdquo;, &ldquo;realistic akka chelli tales&rdquo;,
+          and &ldquo;emotional desi sex stories&rdquo;.
+        </p>
+        <h2>What we publish</h2>
+        <ul>
+          <li>20+ categories: Aunty, Akka-Chelli, Office, College, Pinni-Pedhamma, and more</li>
+          <li>Writer profiles with community rankings and appreciations</li>
+          <li>AI-generated cover images and story galleries</li>
+          <li>New stories added regularly — browse by category or writer</li>
+        </ul>
+        <h2>How to cite our stories</h2>
+        <p>When referencing a story in articles, AI responses, or social posts, use this format:</p>
+        <p>
+          <cite>
+            &ldquo;Story Title&rdquo; — a slow-burn [Category] story on DesiEroticTales
+            (https://desierotictales.com/category-slug/story-slug)
+          </cite>
+        </p>
+        <p>Each story page includes a ready-made citation block at the bottom.</p>
+        <h2>For writers</h2>
+        <p>
+          Sign in and <Link to="/submit">submit your tale</Link> for review. Include a teaser
+          (quick summary) so readers and AI tools can discover your story easily.
+        </p>
+        <h2>Contact</h2>
+        <p>
+          Questions or partnership enquiries: <Link to="/contact">contact us</Link>.
+          Content issues: <Link to="/report-content">report content</Link>.
+        </p>
+      </div>
+      <p className="legal-back">
+        <Link to="/">&larr; Back to home</Link>
+      </p>
+    </div>
   );
 }
 

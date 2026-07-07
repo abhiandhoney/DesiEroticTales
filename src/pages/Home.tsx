@@ -17,7 +17,8 @@ import AdSlot from '../components/AdSlot';
 import CategoryNav from '../components/CategoryNav';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { HOME_META } from '../lib/seoMeta';
-import { buildWebSiteJsonLd } from '../lib/seo';
+import { buildWebSiteJsonLd, buildOrganizationJsonLd, buildItemListJsonLd } from '../lib/seo';
+import SiteOverview from '../components/SiteOverview';
 
 
 const LATEST_LIMIT = 8;
@@ -81,12 +82,27 @@ export default function Home() {
 
   const featured = storyOfWeek;
 
+  const origin = window.location.origin;
+  const featuredList = featured
+    ? [{ name: featured.title, path: getStoryPath(featured) }]
+    : [];
+  const editorsList = editorsChoice.map((s) => ({ name: s.title, path: getStoryPath(s) }));
+
   usePageMeta({
     title: HOME_META.title,
     description: HOME_META.description,
     keywords: HOME_META.keywords,
     path: HOME_META.path,
-    jsonLd: buildWebSiteJsonLd(window.location.origin),
+    jsonLd: [
+      buildOrganizationJsonLd(origin),
+      buildWebSiteJsonLd(origin),
+      ...(featuredList.length
+        ? [buildItemListJsonLd('Story of the Week', featuredList)]
+        : []),
+      ...(editorsList.length
+        ? [buildItemListJsonLd("Editor's Choice", editorsList)]
+        : []),
+    ],
   });
 
   return (
@@ -94,13 +110,15 @@ export default function Home() {
       <section className="hero">
         <div className="hero-glow" />
         <h1 className="hero-title">
-          <span className="telugu-text" lang="te" title="Secret stories">రహస్య కథలు</span>
-          <span className="hero-telugu-meaning">Secret Stories</span><br />
-          Stories that whisper after dark
+          Telugu Sex Stories &amp; Slow-Burn Desi Erotica
         </h1>
+        <p className="hero-subtitle hero-subtitle-poetic">
+          <span className="telugu-text" lang="te" title="Secret stories">రహస్య కథలు</span>
+          {' '}— Stories that whisper after dark
+        </p>
         <p className="hero-subtitle">
-          Free Telugu sex stories, kamakathalu &amp; boothu kathalu — aunty, akka chelli, office &amp; more.<br />
-          Desi erotic tales of desire and slow-burn passion. Read free. Return often.
+          Free kamakathalu &amp; boothu kathalu — aunty, akka chelli, office &amp; more.<br />
+          Emotional desi tales with AI-generated images. Read free. Return often.
         </p>
         <div className="hero-stats">
           <span>{totalCount > 0 ? `${totalCount}+` : 'New'} stories</span>
@@ -116,6 +134,8 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {!category && <SiteOverview />}
 
       {featured && !category && !loading && (
         <section className="featured-story">

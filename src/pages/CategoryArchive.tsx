@@ -6,11 +6,12 @@ import StoryCard from '../components/StoryCard';
 import EmptyState from '../components/EmptyState';
 import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
+import { buildCollectionJsonLd, buildWebSiteJsonLd, buildCategoryFaqJsonLd } from '../lib/seo';
 import { getCategoryPath, slugToCategory } from '../lib/slug';
 import { categoryPageMeta } from '../lib/seoMeta';
+import CategoryIntro from '../components/CategoryIntro';
 import CategoryNav from '../components/CategoryNav';
-import { keywordsForCategory } from '../lib/seoKeywords';
+import { keywordsForCategory, phraseForCategory } from '../lib/seoKeywords';
 import AdSlot from '../components/AdSlot';
 
 const PAGE_SIZE = 24;
@@ -23,7 +24,7 @@ export default function CategoryArchive() {
   const [loading, setLoading] = useState(true);
   const [authors, setAuthors] = useState<AuthorMap>({});
 
-  const meta = category ? categoryPageMeta(category) : null;
+  const meta = category ? categoryPageMeta(category, totalCount) : null;
   const path = categorySlug ? getCategoryPath(category ?? categorySlug) : '/stories';
 
   usePageMeta({
@@ -36,6 +37,7 @@ export default function CategoryArchive() {
       ? [
           buildWebSiteJsonLd(window.location.origin),
           buildCollectionJsonLd(meta.title, meta.description, path),
+          buildCategoryFaqJsonLd(category, totalCount),
         ]
       : undefined,
   });
@@ -99,10 +101,9 @@ export default function CategoryArchive() {
         <p className="story-back-link">
           <Link to="/stories">&larr; All stories</Link>
         </p>
-        <h1>{meta?.title ?? category}</h1>
-        <p className="page-subtitle">
-          {totalCount.toLocaleString()} free Telugu sex {totalCount === 1 ? 'story' : 'stories'} in {category}
-        </p>
+        <h1>{phraseForCategory(category)}</h1>
+        <CategoryIntro category={category} storyCount={totalCount} />
+        <h2 className="visually-hidden">Stories in {category}</h2>
       </header>
 
       <CategoryNav title="More categories" activeCategory={category} />

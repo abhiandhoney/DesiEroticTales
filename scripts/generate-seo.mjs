@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Post-build SEO: robots.txt, sitemap.xml, and prerendered HTML for crawlers.
+ * Post-build SEO: robots.txt, sitemap.xml, feed.xml, and prerendered HTML for crawlers/LLMs.
  * Requires VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (+ optional VITE_SITE_URL).
  */
 import fs from 'fs';
@@ -49,6 +49,14 @@ const CATEGORY_SLUG_MAP = {
   Other: 'telugu-sex-stories',
 };
 
+const CATEGORY_DESCRIPTIONS = {
+  Aunty: 'Mature aunty and pakkinti slow-burn tales in Telugu — emotional, realistic desi erotica.',
+  'Akka-Chelli': 'Realistic akka chelli slow-burn fiction — emotional sibling tales in Telugu.',
+  Office: 'Workplace slow-burn Telugu erotica — boss, colleague, and panimanishi tension.',
+  College: 'Campus slow-burn Telugu stories — college romance and first experiences.',
+  Friend: 'Friend pellam slow-burn Telugu tales — first-time and emotional romance.',
+};
+
 function categoryToSlug(category) {
   return CATEGORY_SLUG_MAP[category] ?? category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
@@ -59,6 +67,90 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function formatLastmod(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function storyWordCount(content) {
+  const trimmed = (content || '').trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+function storyDescription(story) {
+  const raw = story.teaser?.trim() || story.content || '';
+  return raw.replace(/\s+/g, ' ').trim().slice(0, 160);
+}
+
+function buildStoryHighlights(story) {
+  return [
+    story.category && `Category: ${story.category}`,
+    story.tags?.length && `Tags: ${story.tags.join(', ')}`,
+    `Style: Slow-burn, emotional Telugu erotica`,
+  ].filter(Boolean);
+}
+
+function buildStoryBodyHtml(story) {
+  const desc = storyDescription(story);
+  const highlights = buildStoryHighlights(story);
+  const words = storyWordCount(story.content);
+  const readMins = Math.max(1, Math.ceil(words / 200));
+  const excerpt = escapeHtml((story.content || '').slice(0, 1200));
+
+  return `
+<article itemscope itemtype="https://schema.org/Article">
+  <h1 itemprop="headline">${escapeHtml(story.title)}</h1>
+  <section aria-label="Quick Summary">
+    <h2>Quick Summary</h2>
+    <p class="story-summary-text" itemprop="description">${escapeHtml(desc)}</p>
+  </section>
+  <section aria-label="Key Highlights">
+    <h2>Key Highlights</h2>
+    <ul>
+      ${highlights.map((h) => `<li>${escapeHtml(h)}</li>`).join('')}
+      <li>Read time: ~${readMins} min</li>
+    </ul>
+  </section>
+  <section itemprop="articleBody">
+    <h2>Full Story</h2>
+    <div>${excerpt}</div>
+  </section>
+</article>`;
+}
+
+function buildStoryJsonLd(story, canonical, siteUrl) {
+  const desc = storyDescription(story);
+  const words = storyWordCount(story.content);
+  const readMins = Math.max(1, Math.ceil(words / 200));
+  return {
+    '@context': 'https://schema.org',
+    '@type': ['Article', 'CreativeWork'],
+    headline: story.title,
+    abstract: desc,
+    description: desc,
+    datePublished: story.created_at,
+    dateModified: story.updated_at ?? story.created_at,
+    url: canonical,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+    articleSection: story.category,
+    genre: ['Telugu erotica', 'slow-burn', story.category],
+    about: (story.tags ?? []).map((tag) => ({ '@type': 'Thing', name: tag })),
+    keywords: (story.tags ?? []).join(', ') || story.category,
+    wordCount: words,
+    timeRequired: `PT${readMins}M`,
+    inLanguage: ['te', 'en'],
+    creativeWorkStatus: 'Published',
+    isAccessibleForFree: true,
+    publisher: { '@type': 'Organization', name: 'DesiEroticTales', url: siteUrl },
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['.story-summary-text'],
+    },
+  };
 }
 
 function ensureDir(filePath) {
@@ -74,7 +166,7 @@ function readDistShell() {
   return fs.readFileSync(indexPath, 'utf8');
 }
 
-function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, jsonLd }) {
+function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, jsonLd, ogType = 'article' }) {
   let html = shell;
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
   html = html.replace(
@@ -84,17 +176,23 @@ function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, js
   if (!html.includes('rel="canonical"')) {
     html = html.replace('</head>', `  <link rel="canonical" href="${escapeHtml(canonical)}" />\n</head>`);
   }
+  const ld = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+  const ldScripts = ld.map((d) => `<script type="application/ld+json">${JSON.stringify(d)}</script>`).join('\n  ');
   html = html.replace(
     '</head>',
     `  <meta property="og:title" content="${escapeHtml(title)}" />\n`
       + `  <meta property="og:description" content="${escapeHtml(description)}" />\n`
       + `  <meta property="og:url" content="${escapeHtml(canonical)}" />\n`
-      + `  <meta property="og:type" content="article" />\n`
-      + `  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
+      + `  <meta property="og:type" content="${ogType}" />\n`
+      + `  ${ldScripts}\n</head>`,
   );
   const noscript = `<noscript><main class="prerender-fallback">${bodyHtml}</main></noscript>`;
   html = html.replace('<div id="root"></div>', `${noscript}\n    <div id="root"></div>`);
   return html;
+}
+
+function pushUrl(urlEntries, loc, lastmod) {
+  urlEntries.push({ loc, lastmod: formatLastmod(lastmod) });
 }
 
 async function main() {
@@ -102,6 +200,7 @@ async function main() {
   const supabaseUrl = env.VITE_SUPABASE_URL;
   const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
   const siteUrl = (env.VITE_SITE_URL || 'https://desierotictales.com').replace(/\/$/, '');
+  const buildDate = new Date().toISOString();
 
   if (!supabaseUrl || !supabaseKey) {
     console.warn('Skipping SEO generation: missing Supabase env vars.');
@@ -144,42 +243,65 @@ async function main() {
     .eq('onboarding_complete', true)
     .not('username', 'is', null);
 
-  const urls = [`${siteUrl}/`, `${siteUrl}/stories`, `${siteUrl}/writers`];
+  const urlEntries = [];
+  pushUrl(urlEntries, `${siteUrl}/`, buildDate);
+  pushUrl(urlEntries, `${siteUrl}/stories`, buildDate);
+  pushUrl(urlEntries, `${siteUrl}/writers`, buildDate);
+  pushUrl(urlEntries, `${siteUrl}/about`, buildDate);
+  pushUrl(urlEntries, `${siteUrl}/feed.xml`, buildDate);
+
   const staticPages = [
-    'privacy-policy',
-    'cookie-policy',
-    'contact',
-    'report-content',
+    { slug: 'about', title: 'About DesiEroticTales', description: 'Slow-burn Telugu and Desi erotic fiction — mission, categories, and citation guide.' },
+    { slug: 'privacy-policy', title: 'Privacy Policy', description: 'How DesiEroticTales handles your data.' },
+    { slug: 'cookie-policy', title: 'Cookie Policy', description: 'Cookies and local storage used by DesiEroticTales.' },
+    { slug: 'contact', title: 'Contact Us', description: 'Get in touch with DesiEroticTales.' },
+    { slug: 'report-content', title: 'Report Content', description: 'Report inappropriate content on DesiEroticTales.' },
   ];
 
   for (const page of staticPages) {
-    urls.push(`${siteUrl}/${page}`);
-    const canonical = `${siteUrl}/${page}`;
+    const canonical = `${siteUrl}/${page.slug}`;
+    pushUrl(urlEntries, canonical, buildDate);
     const html = buildPrerenderPage(shell, {
-      title: `${page.replace(/-/g, ' ')} | DesiEroticTales`,
-      description: 'DesiEroticTales — Telugu and Desi stories.',
+      title: `${page.title} | DesiEroticTales`,
+      description: page.description,
       canonical,
-      bodyHtml: `<h1>${escapeHtml(page)}</h1>`,
-      jsonLd: { '@context': 'https://schema.org', '@type': 'WebPage', url: canonical },
+      bodyHtml: `<h1>${escapeHtml(page.title)}</h1><p>${escapeHtml(page.description)}</p>`,
+      jsonLd: [
+        { '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.description, url: canonical },
+        { '@context': 'https://schema.org', '@type': 'Organization', name: 'DesiEroticTales', url: siteUrl },
+      ],
+      ogType: 'website',
     });
-    ensureDir(path.join(dist, page, 'index.html'));
-    fs.writeFileSync(path.join(dist, page, 'index.html'), html);
+    ensureDir(path.join(dist, page.slug, 'index.html'));
+    fs.writeFileSync(path.join(dist, page.slug, 'index.html'), html);
   }
 
   for (const cat of Object.keys(CATEGORY_SLUG_MAP)) {
     const slug = categoryToSlug(cat);
     const canonical = `${siteUrl}/category/${slug}`;
-    urls.push(canonical);
+    const catDesc = CATEGORY_DESCRIPTIONS[cat] || `Browse ${cat} slow-burn Telugu stories on DesiEroticTales.`;
+    pushUrl(urlEntries, canonical, buildDate);
     const html = buildPrerenderPage(shell, {
-      title: `${cat} Stories | DesiEroticTales`,
-      description: `Browse ${cat} stories on DesiEroticTales.`,
+      title: `${cat} Stories — Free Slow-Burn Tales | DesiEroticTales`,
+      description: catDesc,
       canonical,
-      bodyHtml: `<h1>${escapeHtml(cat)} Stories</h1>`,
-      jsonLd: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: `${cat} Stories`, url: canonical },
+      bodyHtml: `<h1>${escapeHtml(cat)} Stories</h1><p>${escapeHtml(catDesc)}</p>`,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: `${cat} Stories`,
+        description: catDesc,
+        url: canonical,
+      },
+      ogType: 'website',
     });
     ensureDir(path.join(dist, 'category', slug, 'index.html'));
     fs.writeFileSync(path.join(dist, 'category', slug, 'index.html'), html);
   }
+
+  const feedStories = [...(stories ?? [])]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 50);
 
   for (const story of stories ?? []) {
     const catSlug = categoryToSlug(story.category);
@@ -188,19 +310,10 @@ async function main() {
       ? `${siteUrl}/${catSlug}/${storySlug}`
       : `${siteUrl}/story/${story.id}`;
     if (!storySlug && hasSlugColumn) continue;
-    urls.push(canonical);
-    const desc = (story.teaser || story.content || '').slice(0, 160);
-    const excerpt = escapeHtml((story.content || '').slice(0, 800));
-    const bodyHtml = `<article><h1>${escapeHtml(story.title)}</h1><p>${escapeHtml(desc)}</p><div>${excerpt}</div></article>`;
-    const jsonLd = {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
-      headline: story.title,
-      description: desc,
-      datePublished: story.created_at,
-      dateModified: story.updated_at ?? story.created_at,
-      url: canonical,
-    };
+    pushUrl(urlEntries, canonical, story.updated_at ?? story.created_at);
+    const desc = storyDescription(story);
+    const bodyHtml = buildStoryBodyHtml(story);
+    const jsonLd = buildStoryJsonLd(story, canonical, siteUrl);
     const html = buildPrerenderPage(shell, {
       title: `${story.title} | DesiEroticTales`,
       description: desc,
@@ -219,18 +332,20 @@ async function main() {
 
   for (const w of writers ?? []) {
     const canonical = `${siteUrl}/writer/${w.username}`;
-    urls.push(canonical);
+    pushUrl(urlEntries, canonical, buildDate);
     const html = buildPrerenderPage(shell, {
       title: `@${w.username} | DesiEroticTales`,
-      description: w.bio?.slice(0, 160) || `Stories by @${w.username}`,
+      description: w.bio?.slice(0, 160) || `Slow-burn Telugu stories by @${w.username}`,
       canonical,
-      bodyHtml: `<h1>@${escapeHtml(w.username)}</h1>`,
+      bodyHtml: `<h1>@${escapeHtml(w.username)}</h1>${w.bio ? `<p>${escapeHtml(w.bio)}</p>` : ''}`,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'Person',
         name: w.display_name || w.username,
         url: canonical,
+        description: w.bio ?? undefined,
       },
+      ogType: 'profile',
     });
     ensureDir(path.join(dist, 'writer', w.username, 'index.html'));
     fs.writeFileSync(path.join(dist, 'writer', w.username, 'index.html'), html);
@@ -239,13 +354,36 @@ async function main() {
   const robots = `User-agent: *
 Allow: /
 
+# LLM / AI crawlers — allow indexing for discoverability
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 Sitemap: ${siteUrl}/sitemap.xml
 `;
   fs.writeFileSync(path.join(dist, 'robots.txt'), robots);
 
-  const sitemapEntries = [...new Set(urls)]
-    .map((loc) => `  <url><loc>${escapeHtml(loc)}</loc></url>`)
+  const seen = new Set();
+  const sitemapEntries = urlEntries
+    .filter(({ loc }) => {
+      if (seen.has(loc)) return false;
+      seen.add(loc);
+      return true;
+    })
+    .map(({ loc, lastmod }) => {
+      const lastmodTag = lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : '';
+      return `  <url>\n    <loc>${escapeHtml(loc)}</loc>${lastmodTag}\n  </url>`;
+    })
     .join('\n');
+
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${sitemapEntries}
@@ -253,7 +391,42 @@ ${sitemapEntries}
 `;
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), sitemap);
 
-  console.log(`SEO artifacts: ${urls.length} URLs, ${(stories ?? []).length} story pages prerendered.`);
+  const rssItems = feedStories.map((story) => {
+    const catSlug = categoryToSlug(story.category);
+    const storySlug = hasSlugColumn && story.slug ? story.slug : story.id;
+    const link = hasSlugColumn && story.slug
+      ? `${siteUrl}/${catSlug}/${storySlug}`
+      : `${siteUrl}/story/${story.id}`;
+    const desc = escapeHtml(storyDescription(story));
+    const pubDate = new Date(story.created_at).toUTCString();
+    return `    <item>
+      <title>${escapeHtml(story.title)}</title>
+      <link>${escapeHtml(link)}</link>
+      <guid isPermaLink="true">${escapeHtml(link)}</guid>
+      <description>${desc}</description>
+      <category>${escapeHtml(story.category)}</category>
+      <pubDate>${pubDate}</pubDate>
+    </item>`;
+  }).join('\n');
+
+  const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>DesiEroticTales — Latest Telugu Stories</title>
+    <link>${siteUrl}/</link>
+    <description>Slow-burn Telugu and Desi erotic stories — latest updates</description>
+    <language>en-in</language>
+    <lastBuildDate>${new Date(buildDate).toUTCString()}</lastBuildDate>
+    <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml" />
+${rssItems}
+  </channel>
+</rss>
+`;
+  fs.writeFileSync(path.join(dist, 'feed.xml'), feed);
+
+  console.log(
+    `SEO artifacts: ${seen.size} URLs, ${(stories ?? []).length} story pages, feed.xml with ${feedStories.length} items.`,
+  );
 }
 
 main().catch((err) => {

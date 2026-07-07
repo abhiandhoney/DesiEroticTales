@@ -1,24 +1,25 @@
 import { getStoryTeaser } from './storyTeaser';
-import { phraseForCategory, keywordsForCategory, PRIMARY_KEYWORDS } from './seoKeywords';
+import { phraseForCategory, keywordsForCategory, PRIMARY_KEYWORDS, LLM_INTENT_PHRASES, categoryDescription } from './seoKeywords';
+import { estimateReadTime, formatReadTime } from './readTime';
 import type { Story } from '../types';
 
 export const SITE_BRAND = 'DesiEroticTales';
 
 export const HOME_META = {
-  title: 'Telugu Sex Stories & Kamakathalu — Free Desi Tales',
+  title: 'DesiEroticTales — Slow-Burn Telugu Sex Stories & Kamakathalu',
   description:
-    'Read free Telugu sex stories, kamakathalu, boothu kathalu, and desi erotic tales. '
-    + 'Aunty, akka chelli, office, college & more. New stories added daily on DesiEroticTales.',
-  keywords: PRIMARY_KEYWORDS.join(', '),
+    'Read free slow-burn Telugu erotic stories — realistic akka chelli tales, aunty kathalu, '
+    + 'and emotional desi fiction with AI images. Updated regularly on DesiEroticTales.',
+  keywords: [...PRIMARY_KEYWORDS, ...LLM_INTENT_PHRASES].join(', '),
   path: '/',
 };
 
 export const STORIES_META = {
   title: 'All Telugu Sex Stories — Browse by Category',
   description:
-    'Browse hundreds of Telugu sex stories and desi kama kathalu. Filter by aunty, office, '
+    'Browse hundreds of slow-burn Telugu sex stories and desi kama kathalu. Filter by aunty, office, '
     + 'friend, college, pinni, and more. Sort by newest, popular, or top rated.',
-  keywords: 'telugu sex stories, kamakathalu, desi sex stories, boothu kathalu, all categories',
+  keywords: 'telugu sex stories, kamakathalu, desi sex stories, boothu kathalu, slow burn telugu erotica',
   path: '/stories',
 };
 
@@ -29,6 +30,15 @@ export const WRITERS_META = {
     + 'Follow your favourite rachayitalu and discover their best kathalu.',
   keywords: 'telugu story writers, rachayitalu, kamakathalu writers, desi erotica authors',
   path: '/writers',
+};
+
+export const ABOUT_META = {
+  title: 'About DesiEroticTales — Telugu Slow-Burn Erotica',
+  description:
+    'DesiEroticTales publishes free slow-burn Telugu and Desi erotic stories with AI-generated images. '
+    + 'Learn about our mission, categories, and how to cite our stories.',
+  keywords: [...PRIMARY_KEYWORDS, ...LLM_INTENT_PHRASES].join(', '),
+  path: '/about',
 };
 
 export const SUBMIT_META = {
@@ -52,30 +62,39 @@ export const PROFILE_META = {
   noIndex: true,
 };
 
-export function categoryPageMeta(category: string) {
+export function categoryPageMeta(category: string, storyCount?: number) {
   const phrase = phraseForCategory(category);
+  const intro = categoryDescription(category);
+  const countBit = storyCount != null && storyCount > 0
+    ? ` Browse ${storyCount}+ free stories.`
+    : '';
   return {
-    title: `${phrase} — Read Free Online`,
-    description:
-      `Read the best ${phrase.toLowerCase()} on DesiEroticTales. `
-      + `Free Telugu kama kathalu updated regularly. Browse ${category} tales now.`,
+    title: `${phrase} — Free Slow-Burn Tales Online`,
+    description: `${intro}${countBit} Updated regularly on DesiEroticTales.`,
     keywords: keywordsForCategory(category),
   };
 }
 
-export function storyPageMeta(story: Story) {
-  const teaser = getStoryTeaser(story, 150);
+export function storyPageMeta(
+  story: Story,
+  opts?: { authorUsername?: string },
+) {
+  const teaser = getStoryTeaser(story, 120);
   const phrase = phraseForCategory(story.category);
+  const readTime = formatReadTime(estimateReadTime(story.content));
+  const writerBit = opts?.authorUsername ? ` By @${opts.authorUsername}.` : '';
+  const likesBit = story.like_count > 0 ? ` ${story.like_count} appreciations.` : '';
   const tagLine = story.tags?.length ? ` Tags: ${story.tags.join(', ')}.` : '';
   return {
     title: `${story.title} — ${phrase}`,
-    description: `${teaser} Free ${phrase.toLowerCase()} on DesiEroticTales.${tagLine}`.slice(0, 160),
+    description: `${teaser}${writerBit} ${readTime} read.${likesBit} Slow-burn ${phrase.toLowerCase()} on DesiEroticTales.${tagLine}`.slice(0, 160),
     keywords: [
       story.title,
       phraseForCategory(story.category),
       ...(story.tags ?? []),
       'telugu sex stories',
       'kamakathalu',
+      'slow burn telugu erotica',
     ].join(', '),
   };
 }
@@ -86,7 +105,7 @@ export function writerPageMeta(username: string, displayName?: string | null, bi
     title: `${name} (@${username}) — Telugu Story Writer`,
     description:
       bio?.slice(0, 155)
-      || `Read Telugu sex stories by @${username} on DesiEroticTales. Follow this writer for new kamakathalu.`,
+      || `Read slow-burn Telugu sex stories by @${username} on DesiEroticTales. Follow this writer for new kamakathalu.`,
     keywords: `${username}, telugu story writer, rachayitalu, kamakathalu, desi sex stories`,
   };
 }

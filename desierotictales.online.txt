@@ -1,0 +1,11 @@
+; Zone file for desierotictales.online
+; Generated on 2026-07-07 13:05:36 UTC
+
+$ORIGIN desierotictales.online
+$TTL 3600
+
+@                              3600 IN SOA   helios.dns-parking.com. dns.hostinger.com. 2026070702 10000 2400 604800 600
+@                              50 IN A     2.57.91.91
+@                              86400 IN NS    aster.dns-parking.com.
+                               86400 IN NS    helios.dns-parking.com.
+www                            300 IN CNAME desierotictales.online.

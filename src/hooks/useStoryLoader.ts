@@ -14,7 +14,7 @@ interface UseStoryLoaderOptions {
 export function useStoryLoader({ legacyId, categorySlug, storySlug }: UseStoryLoaderOptions) {
   const navigate = useNavigate();
   const [story, setStory] = useState<Story | null>(null);
-  const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name'> | null>(null);
+  const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name' | 'bio'> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const viewsCounted = useRef(false);
@@ -71,12 +71,12 @@ export function useStoryLoader({ legacyId, categorySlug, storySlug }: UseStoryLo
 
       const { data: prof } = await supabase
         .from('profiles')
-        .select('username, display_name')
+        .select('username, display_name, bio')
         .eq('id', loaded.user_id)
         .maybeSingle();
 
       if (!cancelled && prof?.username) {
-        setAuthor(prof as Pick<Profile, 'username' | 'display_name'>);
+        setAuthor(prof as Pick<Profile, 'username' | 'display_name' | 'bio'>);
       }
 
       if (!viewsCounted.current) {

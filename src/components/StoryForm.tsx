@@ -145,6 +145,10 @@ export default function StoryForm({
       setError('Title must be at least 5 characters.');
       return;
     }
+    if (teaser.trim().length < 40) {
+      setError('Teaser (quick summary) must be at least 40 characters — helps readers and AI discover your story.');
+      return;
+    }
     if (teaser.trim().length > TEASER_MAX_LENGTH) {
       setError(`Teaser must be ${TEASER_MAX_LENGTH} characters or fewer.`);
       return;
@@ -291,15 +295,17 @@ export default function StoryForm({
 
       <div className="form-group">
         <label htmlFor="teaser">
-          Teaser <span className="label-optional">(recommended)</span>
+          Quick summary (teaser) <span className="label-required">*</span>
         </label>
         <textarea
           id="teaser"
           className="textarea textarea-compact"
           value={teaser}
           onChange={(e) => setTeaser(e.target.value)}
-          placeholder="A short hook that draws readers in..."
+          placeholder="2–3 sentences: what is this story about? (Shown at the top for readers and search/AI tools)"
           rows={3}
+          required
+          minLength={40}
           maxLength={TEASER_MAX_LENGTH}
         />
         <span className="char-count">
@@ -360,10 +366,11 @@ export default function StoryForm({
           className="textarea"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Let the tension build slowly..."
+          placeholder="Let the tension build slowly... Use ## Scene name on its own line for section breaks (optional)."
           rows={20}
           required
         />
+        <span className="form-hint">Tip: start a paragraph with ## to add a section heading (e.g. ## The first touch).</span>
         <span className="char-count">{content.length} characters (min 200)</span>
       </div>
 

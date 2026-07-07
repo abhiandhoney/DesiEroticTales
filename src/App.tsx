@@ -15,6 +15,7 @@ import {
   CookiePolicyPage,
   ContactPage,
   ReportContentPage,
+  AboutPage,
 } from './pages/LegalPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/category/:categorySlug" element={<CategoryArchive />} />
               <Route path="/writer/:username" element={<WriterProfile />} />
               <Route path="/writers" element={<Writers />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/cookie-policy" element={<CookiePolicyPage />} />
               <Route path="/contact" element={<ContactPage />} />
