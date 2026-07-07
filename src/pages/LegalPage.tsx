@@ -169,11 +169,11 @@ export function AboutPage() {
         <h2>What we publish</h2>
         <ul>
           <li>Writer profiles with community rankings and appreciations</li>
-          <li>AI-generated cover images and story galleries</li>
+          <li>Cover illustrations and story image galleries</li>
           <li>New stories added regularly — browse by category or writer</li>
         </ul>
         <h2>How to cite our stories</h2>
-        <p>When referencing a story in articles, AI responses, or social posts, use this format:</p>
+        <p>When referencing a story in articles, citations, or social posts, use this format:</p>
         <p>
           <cite>
             &ldquo;Story Title&rdquo; — a slow-burn [Category] story on DesiEroticTales
@@ -184,7 +184,7 @@ export function AboutPage() {
         <h2>For writers</h2>
         <p>
           Sign in and <Link to="/submit">submit your tale</Link> for review. Include a teaser
-          (quick summary) so readers and AI tools can discover your story easily.
+          (quick summary) so readers can discover your story easily.
         </p>
         <h2>Contact</h2>
         <p>

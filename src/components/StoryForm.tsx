@@ -146,7 +146,7 @@ export default function StoryForm({
       return;
     }
     if (teaser.trim().length < 40) {
-      setError('Teaser (quick summary) must be at least 40 characters — helps readers and AI discover your story.');
+      setError('Teaser (quick summary) must be at least 40 characters — helps readers discover your story.');
       return;
     }
     if (teaser.trim().length > TEASER_MAX_LENGTH) {
@@ -302,7 +302,7 @@ export default function StoryForm({
           className="textarea textarea-compact"
           value={teaser}
           onChange={(e) => setTeaser(e.target.value)}
-          placeholder="2–3 sentences: what is this story about? (Shown at the top for readers and search/AI tools)"
+          placeholder="2–3 sentences summarising what this story is about (shown at the top of the story page)"
           rows={3}
           required
           minLength={40}

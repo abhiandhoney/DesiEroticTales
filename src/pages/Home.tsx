@@ -112,12 +112,12 @@ export default function Home() {
           Telugu Sex Stories &amp; Slow-Burn Desi Erotica
         </h1>
         <p className="hero-subtitle hero-subtitle-poetic">
-          <span className="telugu-text" lang="te" title="Secret stories">రహస్య కథలు</span>
-          {' '}— Stories that whisper after dark
+          <span className="telugu-text" lang="te" title="Stories">కథలు</span>
+          {' '}— Telugu &amp; Desi erotic fiction
         </p>
         <p className="hero-subtitle">
-          Free kamakathalu &amp; boothu kathalu — aunty, akka chelli, office &amp; more.<br />
-          Emotional desi tales with AI-generated images. Read free. Return often.
+          Kamakathalu and boothu kathalu across 20+ categories — aunty, akka chelli, office, college, and more.<br />
+          Curated stories from community writers. Updated regularly.
         </p>
         <div className="hero-stats">
           <span>{totalCount > 0 ? `${totalCount}+` : 'New'} stories</span>
@@ -199,8 +199,8 @@ export default function Home() {
         <section className="home-cta-strip" aria-label="Get started">
           <div className="home-cta-strip-inner">
             <div className="home-cta-copy">
-              <h2 className="home-cta-title">Ready for your next late-night read?</h2>
-              <p className="home-cta-sub">Browse hundreds of Telugu &amp; Desi tales — or join our writers and share your own.</p>
+              <h2 className="home-cta-title">Explore the story library</h2>
+              <p className="home-cta-sub">Browse by category or writer — or submit your own tale for review.</p>
             </div>
             <div className="home-cta-actions">
               <Link to="/stories" className="btn btn-primary">Browse stories</Link>

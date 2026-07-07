@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="footer-col footer-col-brand">
           <p className="footer-brand">DesiEroticTales</p>
           <p className="footer-tagline">
-            Telugu &amp; Desi stories that linger in your mind
+            Telugu &amp; Desi erotic fiction
             {' '}| <span className="telugu-text" lang="te" title="Stories (Kathalu)">కథలు</span>
           </p>
           <p className="footer-disclaimer">Adults 18+ only · Age verification required</p>
@@ -48,7 +48,7 @@ export default function Footer() {
           <p className="footer-copy">
             (c) {new Date().getFullYear()} {getSiteHostname()}
           </p>
-          <p className="footer-note">Free to read · New tales added regularly</p>
+          <p className="footer-note">Updated regularly · Adults 18+ only</p>
         </div>
         <AdSlot slot="footer" />
       </div>

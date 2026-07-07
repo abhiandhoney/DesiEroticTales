@@ -8,8 +8,8 @@ export const SITE_BRAND = 'DesiEroticTales';
 export const HOME_META = {
   title: 'DesiEroticTales — Slow-Burn Telugu Sex Stories & Kamakathalu',
   description:
-    'Read free slow-burn Telugu erotic stories — realistic akka chelli tales, aunty kathalu, '
-    + 'and emotional desi fiction with AI images. Updated regularly on DesiEroticTales.',
+    'Browse Telugu sex stories, kamakathalu, and desi erotic fiction across 20+ categories. '
+    + 'Community-written tales — aunty, akka chelli, office, college, and more.',
   keywords: [...PRIMARY_KEYWORDS, ...LLM_INTENT_PHRASES].join(', '),
   path: '/',
 };
@@ -35,8 +35,8 @@ export const WRITERS_META = {
 export const ABOUT_META = {
   title: 'About DesiEroticTales — Telugu Slow-Burn Erotica',
   description:
-    'DesiEroticTales publishes free slow-burn Telugu and Desi erotic stories with AI-generated images. '
-    + 'Learn about our mission, categories, and how to cite our stories.',
+    'About DesiEroticTales — Telugu and Desi erotic fiction, story categories, '
+    + 'writer submissions, and citation guidelines.',
   keywords: [...PRIMARY_KEYWORDS, ...LLM_INTENT_PHRASES].join(', '),
   path: '/about',
 };

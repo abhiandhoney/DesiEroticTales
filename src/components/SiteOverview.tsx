@@ -7,9 +7,9 @@ export default function SiteOverview() {
     <section className="site-overview site-overview--about" aria-label="About DesiEroticTales">
       <h2 className="site-overview-title">What is DesiEroticTales?</h2>
       <p className="site-overview-lead">
-        DesiEroticTales is a free platform for high-quality, slow-burn Telugu and Desi erotic stories
-        with AI-generated images. We publish realistic, emotional kathalu — akka chelli tales, aunty stories,
-        office romance, college fiction, and more. Adults 18+ only.
+        DesiEroticTales is a platform for Telugu and Desi erotic fiction. We publish character-driven,
+        slow-burn kathalu across 20+ categories — including akka chelli, aunty, office, college, and more.
+        All content is free to read. Adults 18+ only.
       </p>
       <h3 className="site-overview-subtitle">Popular categories</h3>
       <ul className="site-overview-categories">

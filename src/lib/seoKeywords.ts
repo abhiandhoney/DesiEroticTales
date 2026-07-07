@@ -149,7 +149,7 @@ export const CATEGORY_KEYWORDS: Record<string, { phrase: string; description: st
   },
   Photos: {
     phrase: 'Telugu sex stories with photos',
-    description: 'Telugu erotic stories paired with AI-generated images and photo galleries.',
+    description: 'Telugu erotic stories with illustrated covers and photo galleries.',
     keywords: ['telugu sex photos', 'telugu sex stories with images'],
   },
   Other: {

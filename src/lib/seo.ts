@@ -167,7 +167,7 @@ export function buildCategoryFaqJsonLd(category: string, count: number) {
         name: `What kind of stories are in ${category}?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: `The ${category} category on DesiEroticTales features slow-burn, emotional Telugu erotic fiction with AI-generated images.`,
+          text: `The ${category} category on DesiEroticTales features slow-burn, character-driven Telugu erotic fiction.`,
         },
       },
     ],
