@@ -3,9 +3,11 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import AgeGate from './AgeGate';
 import { ToastProvider } from '../hooks/useToast';
+import { ConfirmProvider } from '../hooks/useConfirm';
 
 export default function MainLayout() {
   return (
+    <ConfirmProvider>
     <ToastProvider>
       <AgeGate />
       <a href="#main-content" className="skip-link">Skip to content</a>
@@ -17,5 +19,6 @@ export default function MainLayout() {
         <Footer />
       </div>
     </ToastProvider>
+    </ConfirmProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useToast } from '../hooks/useToast';
 
 interface ShareButtonProps {
   title: string;
@@ -7,7 +7,7 @@ interface ShareButtonProps {
 }
 
 export default function ShareButton({ title, text, url }: ShareButtonProps) {
-  const [feedback, setFeedback] = useState('');
+  const { toast } = useToast();
 
   async function handleShare() {
     const shareUrl = url ?? window.location.href;
@@ -24,20 +24,15 @@ export default function ShareButton({ title, text, url }: ShareButtonProps) {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setFeedback('Link copied!');
-      setTimeout(() => setFeedback(''), 2000);
+      toast('Link copied to clipboard.', 'success');
     } catch {
-      setFeedback('Could not copy link');
-      setTimeout(() => setFeedback(''), 2000);
+      toast('Could not copy link.', 'error');
     }
   }
 
   return (
-    <div className="share-button-wrap">
-      <button type="button" className="btn btn-ghost btn-sm share-btn" onClick={handleShare}>
-        Share
-      </button>
-      {feedback && <span className="share-feedback" role="status">{feedback}</span>}
-    </div>
+    <button type="button" className="btn btn-ghost btn-sm share-btn" onClick={handleShare}>
+      Share
+    </button>
   );
 }

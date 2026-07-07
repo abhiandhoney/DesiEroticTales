@@ -11,6 +11,8 @@ export default function StoryMediaGallery({ story }: StoryMediaGalleryProps) {
   const urls = getStoryMediaUrls(story);
   const [active, setActive] = useState(0);
   const stripRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const focused = useRef(false);
 
   useEffect(() => {
     setActive(0);
@@ -23,8 +25,9 @@ export default function StoryMediaGallery({ story }: StoryMediaGalleryProps) {
   useEffect(() => {
     if (urls.length <= 1) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight') go(active + 1);
-      if (e.key === 'ArrowLeft') go(active - 1);
+      if (!focused.current) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -39,7 +42,16 @@ export default function StoryMediaGallery({ story }: StoryMediaGalleryProps) {
   if (urls.length === 0) return null;
 
   return (
-    <section className="steam-gallery" aria-label="Story gallery">
+    <section
+      ref={sectionRef}
+      className="steam-gallery"
+      aria-label="Story gallery"
+      tabIndex={urls.length > 1 ? 0 : undefined}
+      onFocus={() => { focused.current = true; }}
+      onBlur={(e) => {
+        if (!sectionRef.current?.contains(e.relatedTarget as Node)) focused.current = false;
+      }}
+    >
       <div className="steam-gallery-main">
         <SafeImage
           key={urls[active]}

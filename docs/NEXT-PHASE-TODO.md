@@ -68,3 +68,19 @@
 - [x] Smoke test: sign-in, edit profile + avatar, follow writer, share story
 - [x] Confirm Cloudflare env vars (`VITE_SUPABASE_*`, `VITE_ADMIN_EMAIL`) — never commit real email
 - [x] Upload admin avatar: `public/assets/admin-avatar-unisex.jpg`
+- [ ] Run migration `010_card_cover.sql` on live Supabase
+
+---
+
+## P6 — Visual polish & Steam gallery
+
+- [x] P6-01 Premium palette (deep black, burgundy, gold)
+- [x] P6-02 Story cards: category badge, read time, author, hover
+- [x] P6-03 Steam-style gallery (arrows + thumbnail strip)
+- [x] P6-04 Card crop vs full image (`card_image_url` / `image_url`)
+- [x] P6-05 Reading font size + serif typography + read time
+- [x] P6-06 Admin search + status filter
+- [x] P6-07 Toast notifications
+- [ ] P6-08 Re-crop existing story covers for proper full + card split
+
+**Status:** ✅ Code complete — pushed `bc33ea7`

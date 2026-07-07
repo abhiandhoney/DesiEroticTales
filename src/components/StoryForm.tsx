@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useConfirm } from '../hooks/useConfirm';
+import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
 import { convertFileToWebP } from '../lib/imageProcessing';
 import { deleteStoryImages, uploadStoryImageBlob, uploadStoryImageBlobs } from '../lib/storyImages';
@@ -51,6 +53,8 @@ export default function StoryForm({
   const [mediaState, setMediaState] = useState<MediaUploadState>(emptyMediaState());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { confirm } = useConfirm();
+  const { toast } = useToast();
 
   const initialGallery = useMemo(
     () => (story?.gallery_urls ?? []).filter((u) => u && u !== story?.image_url),
@@ -125,8 +129,14 @@ export default function StoryForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (mode === 'edit' && !window.confirm('Save changes to this story?')) {
-      return;
+    if (mode === 'edit') {
+      const ok = await confirm({
+        title: 'Save changes?',
+        message: 'Your edits will be saved to this story.',
+        confirmLabel: 'Save changes',
+        cancelLabel: 'Keep editing',
+      });
+      if (!ok) return;
     }
 
     if (title.trim().length < 5) {
@@ -220,6 +230,7 @@ export default function StoryForm({
       }
 
       sessionStorage.removeItem(draftKey);
+      toast(mode === 'create' ? 'Story submitted for review.' : 'Story updated.', 'success');
       onSuccess();
     } catch (err) {
       const orphans = [uploadedFull, uploadedCard, ...uploadedGallery].filter(Boolean) as string[];

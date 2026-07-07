@@ -15,7 +15,9 @@ export function useReadingPrefs() {
     localStorage.setItem(STORAGE_KEY, fontSize);
   }, [fontSize]);
 
+  const contentClass = `story-content--${fontSize}`;
+
   const setFontSize = useCallback((size: FontSize) => setFontSizeState(size), []);
 
-  return { fontSize, setFontSize };
+  return { fontSize, setFontSize, contentClass };
 }

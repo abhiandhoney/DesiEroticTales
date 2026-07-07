@@ -3,25 +3,31 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Profile, Story } from '../types';
 import ReadingProgress from '../components/ReadingProgress';
-import StoryCard from '../components/StoryCard';
 import StoryMediaGallery from '../components/StoryMediaGallery';
-import StoryReactions from '../components/StoryReactions';
+import { StoryReactionsBar } from '../components/StoryReactions';
+import { useStoryReaction } from '../hooks/useStoryReaction';
 import ShareButton from '../components/ShareButton';
+import RelatedStoriesSection from '../components/RelatedStoriesSection';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useReadingPrefs } from '../hooks/useReadingPrefs';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import { getCardImageUrl } from '../lib/storyMedia';
 import { estimateReadTime, formatReadTime } from '../lib/readTime';
-import { useReadingPrefs, type FontSize } from '../hooks/useReadingPrefs';
 
 export default function StoryDetail() {
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
   const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name'> | null>(null);
-  const [related, setRelated] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const viewsCounted = useRef(false);
-  const { fontSize, setFontSize } = useReadingPrefs();
+  const { contentClass } = useReadingPrefs();
+  const reaction = useStoryReaction({
+    storyId: id ?? '',
+    authorId: story?.user_id ?? '',
+    initialLikes: story?.like_count ?? 0,
+    initialDislikes: 0,
+  });
 
   usePageMeta({
     title: story?.title ?? 'Story',
@@ -55,7 +61,6 @@ export default function StoryDetail() {
 
       setStory(data as Story);
       setLoading(false);
-      fetchRelated(data.category, data.id);
       fetchAuthor(data.user_id);
 
       if (!viewsCounted.current) {
@@ -75,12 +80,6 @@ export default function StoryDetail() {
       .eq('id', userId)
       .maybeSingle();
     if (data?.username) setAuthor(data as Pick<Profile, 'username' | 'display_name'>);
-  }
-
-  async function fetchRelated(category: string, currentId: string) {
-    const { data } = await supabase.from('stories').select('*').eq('status', 'approved')
-      .eq('category', category).neq('id', currentId).order('like_count', { ascending: false }).limit(3);
-    if (data) setRelated(data as Story[]);
   }
 
   if (loading) {
@@ -128,45 +127,39 @@ export default function StoryDetail() {
           <span> | </span>
           <span>{new Date(story.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
-        <div className="reading-controls" role="group" aria-label="Reading preferences">
-          <span className="reading-controls-label">Text size</span>
-          {(['sm', 'md', 'lg'] as FontSize[]).map((size) => (
-            <button
-              key={size}
-              type="button"
-              className={`reading-size-btn ${fontSize === size ? 'active' : ''}`}
-              onClick={() => setFontSize(size)}
-              aria-pressed={fontSize === size}
-            >
-              {size === 'sm' ? 'A' : size === 'md' ? 'A+' : 'A++'}
-            </button>
-          ))}
-        </div>
         <div className="story-header-actions">
-          <StoryReactions
-            storyId={story.id}
-            authorId={story.user_id}
-            likeCount={story.like_count ?? 0}
+          <StoryReactionsBar
+            likes={reaction.likes}
+            userReaction={reaction.userReaction}
+            userId={reaction.userId}
+            isOwnStory={reaction.isOwnStory}
+            busy={reaction.busy}
+            onToggle={reaction.toggle}
           />
           <ShareButton title={story.title} text={getStoryTeaser(story, 120)} />
         </div>
       </header>
       <StoryMediaGallery story={story} />
       <div className="ad-slot ad-slot-story-top" data-adsterra="story-top">{/* ADSTERRA */}</div>
-      <div className="story-content">
+      <div className={`story-content ${contentClass}`}>
         {story.content.split(/\n\n+/).filter(Boolean).map((para, i) => (
           <p key={i} className="story-paragraph">{para}</p>
         ))}
       </div>
+      <footer className="story-end-footer">
+        <p className="story-end-prompt">Enjoyed this tale?</p>
+        <StoryReactionsBar
+          likes={reaction.likes}
+          userReaction={reaction.userReaction}
+          userId={reaction.userId}
+          isOwnStory={reaction.isOwnStory}
+          busy={reaction.busy}
+          onToggle={reaction.toggle}
+        />
+        <ShareButton title={story.title} text={getStoryTeaser(story, 120)} />
+      </footer>
       <div className="ad-slot ad-slot-story-bottom" data-adsterra="story-bottom">{/* ADSTERRA */}</div>
-      {related.length > 0 && (
-        <section className="related-stories">
-          <h2 className="section-title">You may also like</h2>
-          <div className="stories-grid stories-grid-compact">
-            {related.map((s) => <StoryCard key={s.id} story={s} />)}
-          </div>
-        </section>
-      )}
+      <RelatedStoriesSection storyId={story.id} category={story.category} />
     </article>
   );
 }
