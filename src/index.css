@@ -1191,6 +1191,12 @@ button.action-btn { appearance: none; }
 .site-overview-cta { font-size: 0.9rem; color: var(--text-muted); }
 .site-overview-cta a { color: var(--accent-gold-soft); }
 
+.site-overview--about {
+  text-align: left; margin: 0 0 2rem; padding: 0;
+}
+.site-overview--about .site-overview-lead { margin-inline: 0; }
+.site-overview--about .site-overview-categories { margin-inline: 0; }
+
 .category-intro { margin-bottom: 1.5rem; }
 .category-intro-text { line-height: 1.65; color: var(--text-muted); margin-bottom: 0.5rem; }
 .category-intro-stats { font-size: 0.9rem; color: var(--text-muted); }

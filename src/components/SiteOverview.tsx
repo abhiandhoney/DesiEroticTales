@@ -4,7 +4,7 @@ import { getCategoryPath } from '../lib/slug';
 
 export default function SiteOverview() {
   return (
-    <section className="site-overview" aria-label="About DesiEroticTales">
+    <section className="site-overview site-overview--about" aria-label="About DesiEroticTales">
       <h2 className="site-overview-title">What is DesiEroticTales?</h2>
       <p className="site-overview-lead">
         DesiEroticTales is a free platform for high-quality, slow-burn Telugu and Desi erotic stories
@@ -23,9 +23,7 @@ export default function SiteOverview() {
         ))}
       </ul>
       <p className="site-overview-cta">
-        <Link to="/about">Learn more about us</Link>
-        {' · '}
-        <Link to="/stories">Browse all stories</Link>
+        <Link to="/stories">Browse all stories &rarr;</Link>
       </p>
     </section>
   );

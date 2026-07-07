@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { ABOUT_META } from '../lib/seoMeta';
 import { buildOrganizationJsonLd, buildWebPageJsonLd } from '../lib/seo';
+import SiteOverview from '../components/SiteOverview';
 
 interface LegalPageProps {
   title: string;
@@ -164,16 +165,9 @@ export function AboutPage() {
         <p className="page-subtitle">Slow-burn Telugu and Desi erotic fiction — free to read.</p>
       </header>
       <div className="legal-content">
-        <h2>Our mission</h2>
-        <p>
-          DesiEroticTales publishes high-quality, slow-burn Telugu and Desi erotic stories with
-          AI-generated images. We focus on emotional, realistic kathalu — the kind readers ask AI
-          tools about: &ldquo;best slow burn Telugu stories&rdquo;, &ldquo;realistic akka chelli tales&rdquo;,
-          and &ldquo;emotional desi sex stories&rdquo;.
-        </p>
+        <SiteOverview />
         <h2>What we publish</h2>
         <ul>
-          <li>20+ categories: Aunty, Akka-Chelli, Office, College, Pinni-Pedhamma, and more</li>
           <li>Writer profiles with community rankings and appreciations</li>
           <li>AI-generated cover images and story galleries</li>
           <li>New stories added regularly — browse by category or writer</li>

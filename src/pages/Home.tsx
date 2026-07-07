@@ -18,7 +18,6 @@ import CategoryNav from '../components/CategoryNav';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { HOME_META } from '../lib/seoMeta';
 import { buildWebSiteJsonLd, buildOrganizationJsonLd, buildItemListJsonLd } from '../lib/seo';
-import SiteOverview from '../components/SiteOverview';
 
 
 const LATEST_LIMIT = 8;
@@ -134,8 +133,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {!category && <SiteOverview />}
 
       {featured && !category && !loading && (
         <section className="featured-story">
