@@ -23,6 +23,7 @@ import {
 } from './pages/LegalPage';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
+import GoogleAnalytics from './components/GoogleAnalytics';
 
 const Submit = lazy(() => import('./pages/Submit'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -47,6 +48,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter basename={routerBasename}>
+        <GoogleAnalytics />
         <ErrorBoundary>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />

@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const CONSENT_KEY = 'det_cookie_consent';
+import { COOKIE_CONSENT_KEY } from '../lib/cookieConsent';
+import { loadGoogleAnalytics, trackPageView } from '../lib/googleAnalytics';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(CONSENT_KEY)) {
+    if (!localStorage.getItem(COOKIE_CONSENT_KEY)) {
       setVisible(true);
     }
   }, []);
 
   function accept() {
-    localStorage.setItem(CONSENT_KEY, 'accepted');
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+    loadGoogleAnalytics();
+    trackPageView(`${window.location.pathname}${window.location.search}${window.location.hash}`);
     setVisible(false);
   }
 
   function decline() {
-    localStorage.setItem(CONSENT_KEY, 'essential');
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'essential');
     setVisible(false);
   }
 
