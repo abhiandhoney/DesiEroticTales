@@ -29,10 +29,10 @@ export default function CookieConsent() {
       <div className="cookie-consent-inner">
         <p id="cookie-consent-title" className="cookie-consent-title">Cookies &amp; privacy</p>
         <p className="cookie-consent-text">
-          We use essential cookies for sign-in and age verification. Optional analytics and ads may
-          use additional cookies. See our{' '}
-          <Link to="/cookie-policy">cookie policy</Link> and{' '}
-          <Link to="/privacy-policy">privacy policy</Link>.
+          We use cookies to keep you signed in, remember your preferences, and improve the site.
+          You can accept all cookies or continue with essential cookies only. See our{' '}
+          <Link to="/cookie-policy">Cookie Policy</Link> and{' '}
+          <Link to="/privacy-policy">Privacy Policy</Link>.
         </p>
         <div className="cookie-consent-actions">
           <button type="button" className="btn btn-primary btn-sm" onClick={accept}>

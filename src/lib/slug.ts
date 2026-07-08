@@ -21,6 +21,7 @@ export const RESERVED_PATHS = new Set([
   'story',
   'category',
   'privacy-policy',
+  'terms-of-use',
   'about',
   'contact',
   'report-content',

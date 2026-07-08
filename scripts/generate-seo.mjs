@@ -258,8 +258,9 @@ async function main() {
 
   const staticPages = [
     { slug: 'about', title: 'About DesiEroticTales', description: 'Slow-burn Telugu and Desi erotic fiction — mission, categories, and citation guide.' },
-    { slug: 'privacy-policy', title: 'Privacy Policy', description: 'How DesiEroticTales handles your data.' },
-    { slug: 'cookie-policy', title: 'Cookie Policy', description: 'Cookies and local storage used by DesiEroticTales.' },
+    { slug: 'privacy-policy', title: 'Privacy Policy', description: 'How DesiEroticTales collects, uses, and protects your personal information.' },
+    { slug: 'terms-of-use', title: 'Terms of Use', description: 'Terms and conditions for using DesiEroticTales.' },
+    { slug: 'cookie-policy', title: 'Cookie Policy', description: 'How DesiEroticTales uses cookies and similar technologies.' },
     { slug: 'contact', title: 'Contact Us', description: 'Get in touch with DesiEroticTales.' },
     { slug: 'report-content', title: 'Report Content', description: 'Report inappropriate content on DesiEroticTales.' },
   ];

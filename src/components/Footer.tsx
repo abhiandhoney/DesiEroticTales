@@ -30,6 +30,7 @@ export default function Footer() {
           <p className="footer-col-title">Legal</p>
           <nav className="footer-nav" aria-label="Legal">
             <Link to="/privacy-policy">Privacy</Link>
+            <Link to="/terms-of-use">Terms</Link>
             <Link to="/cookie-policy">Cookies</Link>
             <Link to="/report-content">Report content</Link>
           </nav>

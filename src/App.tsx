@@ -15,6 +15,7 @@ const WriterProfile = lazy(() => import('./pages/WriterProfile'));
 const CollectionDetail = lazy(() => import('./pages/CollectionDetail'));
 import {
   PrivacyPolicyPage,
+  TermsOfUsePage,
   CookiePolicyPage,
   ContactPage,
   ReportContentPage,
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="/writers" element={<Writers />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-use" element={<TermsOfUsePage />} />
               <Route path="/cookie-policy" element={<CookiePolicyPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/report-content" element={<ReportContentPage />} />
