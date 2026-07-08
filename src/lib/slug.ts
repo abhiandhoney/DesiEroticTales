@@ -1,4 +1,5 @@
 import { STORY_CATEGORIES, type Story, type StoryCategory } from '../types';
+import categorySlugMap from './categorySlugs.json';
 
 /** Paths that must not be interpreted as category/story slugs. */
 export const RESERVED_PATHS = new Set([
@@ -44,28 +45,9 @@ export function slugify(text: string): string {
   return s || 'story';
 }
 
-const CATEGORY_SLUG_MAP: Record<StoryCategory, string> = {
-  Aunty: 'aunty-sex-stories',
-  'Akka-Chelli': 'anna-chellelu',
-  'Amma-Koduku': 'amma-koduku',
-  Friend: 'friend-pellam',
-  Office: 'office-sex',
-  Fantasy: 'fantasy',
-  Neighbor: 'pakkinti-valu',
-  Cousin: 'cousin',
-  College: 'college',
-  MILF: 'milf',
-  'Pakkinti Valu': 'pakkinti-valu',
-  Panimanishi: 'panimanishi',
-  'Pinni-Pedhamma': 'pinni-pedhamma-dengudu',
-  Maradhalu: 'maradhalu',
-  Vadhina: 'vadhina',
-  Gumpu: 'gumpu-dengudu',
-  Yavannam: 'yavannam',
-  Audio: 'audio-telugu-sex-stories',
-  Photos: 'telugu-sex-photos',
-  Other: 'telugu-sex-stories',
-};
+const CATEGORY_SLUG_MAP = categorySlugMap as Record<StoryCategory, string>;
+
+export { CATEGORY_SLUG_MAP };
 
 const SLUG_TO_CATEGORY = Object.fromEntries(
   Object.entries(CATEGORY_SLUG_MAP).map(([cat, slug]) => [slug, cat]),

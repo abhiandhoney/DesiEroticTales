@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import StoryForm from '../components/StoryForm';
+import DeleteStoryButton from '../components/DeleteStoryButton';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import { getStoryPath } from '../lib/slug';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function EditStory() {
   const { id } = useParams<{ id: string }>();
@@ -15,44 +17,58 @@ export default function EditStory() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  usePageMeta({
+    title: 'Edit Story | DesiEroticTales',
+    description: 'Edit your submitted tale.',
+    path: id ? `/edit/${id}` : '/edit',
+    noIndex: true,
+  });
+
   useEffect(() => {
-    if (!authLoading && id && user) fetchStory(id);
+    if (authLoading || !id || !user) return;
+
+    let cancelled = false;
+
+    async function fetchStory(storyId: string) {
+      setLoading(true);
+      setError('');
+      const { data, error: fetchError } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('id', storyId)
+        .single();
+
+      if (cancelled) return;
+
+      if (fetchError || !data) {
+        setError('Story not found.');
+        setLoading(false);
+        return;
+      }
+
+      if (!isAdmin) {
+        if (data.user_id !== user!.id) {
+          setError('You can only edit your own stories.');
+          setLoading(false);
+          return;
+        }
+        if (data.status !== 'pending' && data.status !== 'rejected' && data.status !== 'draft') {
+          setError('You can only edit stories that are drafts, pending, or rejected.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      setStory(data);
+      setLoading(false);
+    }
+
+    void fetchStory(id);
+    return () => { cancelled = true; };
   }, [id, user, authLoading, isAdmin]);
 
-  async function fetchStory(storyId: string) {
-    setLoading(true);
-    setError('');
-    const { data, error: fetchError } = await supabase
-      .from('stories')
-      .select('*')
-      .eq('id', storyId)
-      .single();
-
-    if (fetchError || !data) {
-      setError('Story not found.');
-      setLoading(false);
-      return;
-    }
-
-    if (!isAdmin) {
-      if (data.user_id !== user!.id) {
-        setError('You can only edit your own stories.');
-        setLoading(false);
-        return;
-      }
-      if (data.status !== 'pending' && data.status !== 'rejected' && data.status !== 'draft') {
-        setError('You can only edit stories that are drafts, pending, or rejected.');
-        setLoading(false);
-        return;
-      }
-    }
-
-    setStory(data);
-    setLoading(false);
-  }
-
-  function handleSuccess() {
-    setSuccess(true);
+  function handleSuccess(result: { status: string }) {
+    if (result.status !== 'draft') setSuccess(true);
   }
 
   if (authLoading || loading) {
@@ -108,6 +124,15 @@ export default function EditStory() {
             </>
           )}
         </p>
+        <div className="page-header-actions">
+          <DeleteStoryButton
+            storyId={story.id}
+            storyTitle={story.title}
+            onDeleted={() => navigate(isAdmin ? '/admin' : '/profile')}
+            className="btn btn-ghost btn-sm"
+            label="Delete story"
+          />
+        </div>
       </header>
       <StoryForm
         mode="edit"

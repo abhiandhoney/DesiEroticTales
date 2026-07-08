@@ -1,5 +1,14 @@
-export const COVER_WIDTH = 1280;
-export const COVER_HEIGHT = 720;
+import { cropToCanvas, type PixelCrop } from 'react-image-crop';
+
+export const CARD_COVER_WIDTH = 1280;
+export const CARD_COVER_HEIGHT = 720;
+export const FULL_COVER_WIDTH = 1920;
+export const FULL_COVER_HEIGHT = 1080;
+/** @deprecated Use CARD_COVER_WIDTH */
+export const COVER_WIDTH = CARD_COVER_WIDTH;
+/** @deprecated Use CARD_COVER_HEIGHT */
+export const COVER_HEIGHT = CARD_COVER_HEIGHT;
+export const COVER_ASPECT = 16 / 9;
 export const GALLERY_MAX_DIMENSION = 1920;
 export const WEBP_QUALITY = 0.86;
 
@@ -21,6 +30,7 @@ export async function loadImageFromFile(file: File): Promise<HTMLImageElement> {
     };
     img.src = url;
   });
+  URL.revokeObjectURL(url);
   return img;
 }
 
@@ -78,12 +88,28 @@ export async function convertFileToWebP(
   return canvasToWebP(canvas);
 }
 
-/** Apply drag/zoom crop (WhatsApp-style) and export 16:9 cover WebP. */
+/** Export a react-image-crop selection as WebP at the target resolution. */
+export async function exportCroppedWebP(
+  image: HTMLImageElement,
+  crop: PixelCrop,
+  outputWidth: number,
+  outputHeight: number,
+  scale = 1,
+): Promise<Blob> {
+  const cropCanvas = document.createElement('canvas');
+  await cropToCanvas(image, cropCanvas, crop, scale, 0);
+  const outCanvas = drawToCanvas(outputWidth, outputHeight, (ctx, w, h) => {
+    ctx.drawImage(cropCanvas, 0, 0, w, h);
+  });
+  return canvasToWebP(outCanvas);
+}
+
+/** Apply drag/zoom crop (legacy) and export 16:9 cover WebP. */
 export async function renderCoverWebP(
   img: HTMLImageElement,
   transform: CropTransform,
 ): Promise<Blob> {
-  const canvas = drawToCanvas(COVER_WIDTH, COVER_HEIGHT, (ctx, w, h) => {
+  const canvas = drawToCanvas(CARD_COVER_WIDTH, CARD_COVER_HEIGHT, (ctx, w, h) => {
     const baseScale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
     const scale = baseScale * transform.scale;
     const drawW = img.naturalWidth * scale;

@@ -5,7 +5,7 @@ import type { Story } from '../types';
 
 interface WriterCitationBlockProps {
   story: Story;
-  author: { username: string; display_name?: string | null; bio?: string | null };
+  author: { slug: string; displayName: string; bio?: string | null };
 }
 
 export default function WriterCitationBlock({ story, author }: WriterCitationBlockProps) {
@@ -19,12 +19,9 @@ export default function WriterCitationBlock({ story, author }: WriterCitationBlo
       <h2 className="writer-citation-heading">About the Writer</h2>
       <p className="writer-citation-byline">
         Written by{' '}
-        <Link to={getWriterPath(author.username)} className="story-author-link">
-          @{author.username}
+        <Link to={getWriterPath(author.slug)} className="story-author-link">
+          {author.displayName}
         </Link>
-        {author.display_name && author.display_name !== author.username && (
-          <span className="story-author-display"> ({author.display_name})</span>
-        )}
       </p>
       {author.bio && <p className="writer-citation-bio">{author.bio}</p>}
       <div className="writer-citation-format">

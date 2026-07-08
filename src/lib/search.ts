@@ -5,5 +5,5 @@ export function escapePostgrestIlike(value: string): string {
 
 export function buildStorySearchFilter(term: string): string {
   const q = `%${escapePostgrestIlike(term.trim())}%`;
-  return `title.ilike.${q},teaser.ilike.${q},category.ilike.${q},content.ilike.${q}`;
+  return `title.ilike.${q},teaser.ilike.${q},category.ilike.${q}`;
 }

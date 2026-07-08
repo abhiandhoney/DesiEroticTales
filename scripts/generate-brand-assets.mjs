@@ -59,7 +59,7 @@ const ogSvg = `<?xml version="1.0" encoding="UTF-8"?>
   <text x="680" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#e8c45c">Tales</text>
   <text x="340" y="320" font-family="Arial, sans-serif" font-size="28" letter-spacing="0.12em" fill="#b0a498">TELUGU &amp; DESI EROTIC FICTION</text>
   <text x="340" y="390" font-family="Georgia, serif" font-size="34" fill="#f8f0e4">Kamakathalu · Boothu kathalu · 20+ categories</text>
-  <text x="340" y="450" font-family="Arial, sans-serif" font-size="26" fill="#b0a498">desierotictales.com</text>
+  <text x="340" y="450" font-family="Arial, sans-serif" font-size="26" fill="#b0a498">desierotictales.online</text>
 </svg>`;
 
 async function main() {

@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabase';
 import { getCategoryPath } from '../lib/slug';
 import type { Story } from '../types';
 import StoryCard from './StoryCard';
-import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
+import type { StoryAuthorDisplay } from '../types';
+import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 const PAGE_SIZE = 4;
 
@@ -16,10 +18,11 @@ interface RelatedStoriesSectionProps {
 export default function RelatedStoriesSection({ storyId, category }: RelatedStoriesSectionProps) {
   const [popular, setPopular] = useState<Story[]>([]);
   const [recent, setRecent] = useState<Story[]>([]);
-  const [authors, setAuthors] = useState<AuthorMap>({});
+  const [authors, setAuthors] = useState<Record<string, StoryAuthorDisplay>>({});
   const [popularPage, setPopularPage] = useState(0);
   const [recentPage, setRecentPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -29,7 +32,7 @@ export default function RelatedStoriesSection({ storyId, category }: RelatedStor
     Promise.all([
       supabase
         .from('stories')
-        .select('*')
+        .select(STORY_LIST_COLUMNS)
         .eq('status', 'approved')
         .eq('category', category)
         .neq('id', storyId)
@@ -37,19 +40,25 @@ export default function RelatedStoriesSection({ storyId, category }: RelatedStor
         .limit(24),
       supabase
         .from('stories')
-        .select('*')
+        .select(STORY_LIST_COLUMNS)
         .eq('status', 'approved')
         .eq('category', category)
         .neq('id', storyId)
         .order('created_at', { ascending: false })
         .limit(24),
     ]).then(([popRes, recRes]) => {
+      if (popRes.error || recRes.error) {
+        setError('Could not load related stories.');
+        setLoading(false);
+        return;
+      }
       const pop = (popRes.data ?? []) as Story[];
       const rec = (recRes.data ?? []) as Story[];
       setPopular(pop);
       setRecent(rec);
-      const ids = [...pop, ...rec].map((s) => s.user_id);
-      if (ids.length) fetchStoryAuthors(ids).then(setAuthors);
+      setError('');
+      const all = [...pop, ...rec];
+      if (all.length) fetchStoryAuthorDisplays(all).then(setAuthors);
       setLoading(false);
     });
   }, [storyId, category]);
@@ -62,6 +71,7 @@ export default function RelatedStoriesSection({ storyId, category }: RelatedStor
     );
   }
 
+  if (error) return null;
   if (popular.length === 0 && recent.length === 0) return null;
 
   return (
@@ -102,7 +112,7 @@ function PaginatedStoryBlock({
   stories: Story[];
   page: number;
   onPageChange: (p: number) => void;
-  authors: AuthorMap;
+  authors: Record<string, StoryAuthorDisplay>;
 }) {
   const totalPages = Math.ceil(stories.length / PAGE_SIZE);
   const slice = stories.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
@@ -139,7 +149,7 @@ function PaginatedStoryBlock({
       </div>
       <div className="stories-grid stories-grid-compact">
         {slice.map((s) => (
-          <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+          <StoryCard key={s.id} story={s} authorDisplay={authors[s.id]} />
         ))}
       </div>
     </section>

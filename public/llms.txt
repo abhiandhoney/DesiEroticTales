@@ -1,5 +1,5 @@
 # DesiEroticTales — llms.txt
-# https://desierotictales.com
+# https://desierotictales.online
 
 > DesiEroticTales publishes Telugu and Desi erotic fiction across 20+ categories. Adults 18+ only.
 
@@ -11,13 +11,13 @@
 - Each story includes a Quick Summary and Key Highlights
 
 ## Best pages to cite
-- Homepage: https://desierotictales.com/
-- About: https://desierotictales.com/about
-- All stories: https://desierotictales.com/stories
-- Categories: https://desierotictales.com/category/{slug}
-- Story URL format: https://desierotictales.com/{category-slug}/{story-slug}
-- Writers leaderboard: https://desierotictales.com/writers
-- Writer profile: https://desierotictales.com/writer/{username}
+- Homepage: https://desierotictales.online/
+- About: https://desierotictales.online/about
+- All stories: https://desierotictales.online/stories
+- Categories: https://desierotictales.online/category/{slug}
+- Story URL format: https://desierotictales.online/{category-slug}/{story-slug}
+- Writers leaderboard: https://desierotictales.online/writers
+- Writer profile: https://desierotictales.online/writer/{username}
 
 ## Common topics
 - telugu sex stories and kamakathalu
@@ -26,11 +26,11 @@
 - telugu erotic fiction by category
 
 ## Discovery
-- Sitemap: https://desierotictales.com/sitemap.xml
-- RSS feed: https://desierotictales.com/feed.xml
+- Sitemap: https://desierotictales.online/sitemap.xml
+- RSS feed: https://desierotictales.online/feed.xml
 
 ## Citation format
 "Story Title" — a [Category] story on DesiEroticTales (full story URL)
 
 ## Contact
-https://desierotictales.com/contact
+https://desierotictales.online/contact

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import type { Story, StoryStatus } from '../types';
 import { getStoryTeaser } from '../lib/storyTeaser';
 import StoryReviewModal from '../components/StoryReviewModal';
+import DeleteStoryButton from '../components/DeleteStoryButton';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { ADMIN_META } from '../lib/seoMeta';
 
@@ -117,7 +118,10 @@ export default function Admin() {
     <div className="page admin-page">
       <header className="page-header">
         <h1>Moderation Panel</h1>
-        <p className="page-subtitle">Review each story in full before approving or rejecting</p>
+        <p className="page-subtitle">
+          Review each story in full before approving or rejecting.{' '}
+          <Link to="/admin/pen-names" className="inline-link">Manage pen names</Link>
+        </p>
       </header>
 
       {feedback && (
@@ -211,6 +215,11 @@ export default function Admin() {
                     {story.is_editors_choice ? "Editor's ✓" : "Editor's Choice"}
                   </button>
                 )}
+                <DeleteStoryButton
+                  storyId={story.id}
+                  storyTitle={story.title}
+                  onDeleted={fetchStories}
+                />
               </div>
             </article>
           ))}

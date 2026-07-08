@@ -26,28 +26,9 @@ function loadEnv() {
   return vars;
 }
 
-const CATEGORY_SLUG_MAP = {
-  Aunty: 'aunty-sex-stories',
-  'Akka-Chelli': 'anna-chellelu',
-  'Amma-Koduku': 'amma-koduku',
-  Friend: 'friend-pellam',
-  Office: 'office-sex',
-  Fantasy: 'fantasy',
-  Neighbor: 'pakkinti-valu',
-  Cousin: 'cousin',
-  College: 'college',
-  MILF: 'milf',
-  'Pakkinti Valu': 'pakkinti-valu',
-  Panimanishi: 'panimanishi',
-  'Pinni-Pedhamma': 'pinni-pedhamma-dengudu',
-  Maradhalu: 'maradhalu',
-  Vadhina: 'vadhina',
-  Gumpu: 'gumpu-dengudu',
-  Yavannam: 'yavannam',
-  Audio: 'audio-telugu-sex-stories',
-  Photos: 'telugu-sex-photos',
-  Other: 'telugu-sex-stories',
-};
+const CATEGORY_SLUG_MAP = JSON.parse(
+  fs.readFileSync(path.join(root, 'src/lib/categorySlugs.json'), 'utf8'),
+);
 
 const CATEGORY_DESCRIPTIONS = {
   Aunty: 'Mature aunty and pakkinti slow-burn tales in Telugu — emotional, realistic desi erotica.',
@@ -108,9 +89,9 @@ function buildStoryBodyHtml(story) {
   const highlights = buildStoryHighlights(story);
   const words = storyWordCount(storyPlainText(story));
   const readMins = Math.max(1, Math.ceil(words / 200));
-  const excerpt = story.content_html
-    ? story.content_html.slice(0, 8000)
-    : escapeHtml((story.content || '').slice(0, 1200));
+  const excerpt = escapeHtml(
+    storyPlainText(story).slice(0, 1200),
+  );
 
   return `
 <article itemscope itemtype="https://schema.org/Article">
@@ -177,7 +158,7 @@ function readDistShell() {
   return fs.readFileSync(indexPath, 'utf8');
 }
 
-function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, jsonLd, ogType = 'article' }) {
+function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, jsonLd, ogType = 'article', ogImage }) {
   let html = shell;
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
   html = html.replace(
@@ -195,6 +176,10 @@ function buildPrerenderPage(shell, { title, description, canonical, bodyHtml, js
       + `  <meta property="og:description" content="${escapeHtml(description)}" />\n`
       + `  <meta property="og:url" content="${escapeHtml(canonical)}" />\n`
       + `  <meta property="og:type" content="${ogType}" />\n`
+      + (ogImage
+        ? `  <meta property="og:image" content="${escapeHtml(ogImage)}" />\n`
+          + `  <meta name="twitter:image" content="${escapeHtml(ogImage)}" />\n`
+        : '')
       + `  ${ldScripts}\n</head>`,
   );
   const noscript = `<noscript><main class="prerender-fallback">${bodyHtml}</main></noscript>`;
@@ -210,7 +195,7 @@ async function main() {
   const env = { ...process.env, ...loadEnv() };
   const supabaseUrl = env.VITE_SUPABASE_URL;
   const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
-  const siteUrl = (env.VITE_SITE_URL || 'https://desierotictales.com').replace(/\/$/, '');
+  const siteUrl = (env.VITE_SITE_URL || 'https://desierotictales.online').replace(/\/$/, '');
   const buildDate = new Date().toISOString();
 
   if (!supabaseUrl || !supabaseKey) {
@@ -222,7 +207,7 @@ async function main() {
   const shell = readDistShell();
 
   const fullSelect =
-    'id, title, teaser, content, content_html, category, slug, tags, updated_at, created_at';
+    'id, title, teaser, content, content_html, category, slug, tags, image_url, card_image_url, updated_at, created_at';
   const fallbackSelect = 'id, title, teaser, content, category, updated_at, created_at';
 
   let stories;
@@ -320,17 +305,27 @@ async function main() {
     const canonical = storySlug
       ? `${siteUrl}/${catSlug}/${storySlug}`
       : `${siteUrl}/story/${story.id}`;
-    if (!storySlug && hasSlugColumn) continue;
-    pushUrl(urlEntries, canonical, story.updated_at ?? story.created_at);
+    const legacyCanonical = `${siteUrl}/story/${story.id}`;
+    if (!storySlug && hasSlugColumn) {
+      pushUrl(urlEntries, legacyCanonical, story.updated_at ?? story.created_at);
+    } else {
+      pushUrl(urlEntries, canonical, story.updated_at ?? story.created_at);
+    }
     const desc = storyDescription(story);
     const bodyHtml = buildStoryBodyHtml(story);
     const jsonLd = buildStoryJsonLd(story, canonical, siteUrl);
+    const coverImage = story.card_image_url || story.image_url;
+    const ogImage = coverImage
+      ? (coverImage.startsWith('http') ? coverImage : `${siteUrl}${coverImage.startsWith('/') ? '' : '/'}${coverImage}`)
+      : `${siteUrl}/assets/og-image.png`;
+    const pageCanonical = storySlug ? canonical : legacyCanonical;
     const html = buildPrerenderPage(shell, {
       title: `${story.title} | DesiEroticTales`,
       description: desc,
-      canonical,
+      canonical: pageCanonical,
       bodyHtml,
       jsonLd,
+      ogImage,
     });
     if (storySlug) {
       ensureDir(path.join(dist, catSlug, storySlug, 'index.html'));
@@ -360,6 +355,65 @@ async function main() {
     });
     ensureDir(path.join(dist, 'writer', w.username, 'index.html'));
     fs.writeFileSync(path.join(dist, 'writer', w.username, 'index.html'), html);
+  }
+
+  const { data: penNames } = await supabase
+    .from('author_profiles')
+    .select('slug, name, bio');
+
+  const { data: collections } = await supabase
+    .from('collections')
+    .select('title, slug, description, user_id');
+
+  for (const col of collections ?? []) {
+    const { data: owner } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', col.user_id)
+      .maybeSingle();
+    const username = owner?.username;
+    if (!username) continue;
+    const canonical = `${siteUrl}/writer/${username}/collection/${col.slug}`;
+    pushUrl(urlEntries, canonical, buildDate);
+    const html = buildPrerenderPage(shell, {
+      title: `${col.title} — ${username} | DesiEroticTales`,
+      description: col.description?.slice(0, 160) || `Story collection: ${col.title}`,
+      canonical,
+      bodyHtml: `<h1>${escapeHtml(col.title)}</h1><p>Collection by @${escapeHtml(username)}</p>`,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: col.title,
+        url: canonical,
+      },
+      ogType: 'website',
+    });
+    ensureDir(path.join(dist, 'writer', username, 'collection', col.slug, 'index.html'));
+    fs.writeFileSync(path.join(dist, 'writer', username, 'collection', col.slug, 'index.html'), html);
+  }
+
+  const writerUsernames = new Set((writers ?? []).map((w) => w.username));
+
+  for (const p of penNames ?? []) {
+    if (writerUsernames.has(p.slug)) continue;
+    const canonical = `${siteUrl}/writer/${p.slug}`;
+    pushUrl(urlEntries, canonical, buildDate);
+    const html = buildPrerenderPage(shell, {
+      title: `${p.name} | DesiEroticTales`,
+      description: p.bio?.slice(0, 160) || `Slow-burn Telugu stories by ${p.name}`,
+      canonical,
+      bodyHtml: `<h1>${escapeHtml(p.name)}</h1><p>@${escapeHtml(p.slug)}</p>${p.bio ? `<p>${escapeHtml(p.bio)}</p>` : ''}`,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: p.name,
+        url: canonical,
+        description: p.bio ?? undefined,
+      },
+      ogType: 'profile',
+    });
+    ensureDir(path.join(dist, 'writer', p.slug, 'index.html'));
+    fs.writeFileSync(path.join(dist, 'writer', p.slug, 'index.html'), html);
   }
 
   const robots = `User-agent: *

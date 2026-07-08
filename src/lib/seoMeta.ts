@@ -1,7 +1,7 @@
 import { getStoryTeaser } from './storyTeaser';
 import { phraseForCategory, keywordsForCategory, PRIMARY_KEYWORDS, LLM_INTENT_PHRASES, categoryDescription } from './seoKeywords';
 import { estimateReadTime, formatReadTime } from './readTime';
-import { storyPlainText } from './richText';
+import { storyPlainText } from './richTextPlain';
 import type { Story } from '../types';
 
 export const SITE_BRAND = 'DesiEroticTales';

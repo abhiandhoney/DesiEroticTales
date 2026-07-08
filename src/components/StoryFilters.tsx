@@ -8,6 +8,7 @@ interface StoryFiltersProps {
   searchPlaceholder?: string;
   sort?: 'newest' | 'popular' | 'top_rated' | 'trending';
   onSortChange?: (value: 'newest' | 'popular' | 'top_rated' | 'trending') => void;
+  compact?: boolean;
 }
 
 export default function StoryFilters({
@@ -18,20 +19,23 @@ export default function StoryFilters({
   searchPlaceholder = 'Search stories...',
   sort,
   onSortChange,
+  compact = false,
 }: StoryFiltersProps) {
+  const hasSearch = search !== undefined && onSearchChange;
+
   return (
-    <div className="filters-section">
-      {search !== undefined && onSearchChange && (
-        <input
-          type="search"
-          placeholder={searchPlaceholder}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="input"
-          aria-label="Search stories"
-        />
-      )}
-      <div className="filter-row">
+    <div className={`filters-section${compact ? ' filters-section--compact' : ''}`}>
+      <div className="filters-bar">
+        {hasSearch && (
+          <input
+            type="search"
+            placeholder={searchPlaceholder}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="input filters-search"
+            aria-label="Search stories"
+          />
+        )}
         <select
           value={category}
           onChange={(e) => onCategoryChange(e.target.value)}

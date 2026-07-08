@@ -12,6 +12,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import { accountDisplayLabel, displayUserEmail } from '../lib/privacy';
 import { getStoryPath } from '../lib/slug';
 import { usePageMeta } from '../hooks/usePageMeta';
+import DeleteStoryButton from '../components/DeleteStoryButton';
 import { PROFILE_META } from '../lib/seoMeta';
 
 type Tab = 'all' | StoryStatus;
@@ -53,13 +54,13 @@ export default function Profile() {
     setStoriesError('');
     const { data, error } = await supabase
       .from('stories')
-      .select('*')
+      .select('id, title, teaser, category, status, slug, created_at, updated_at, like_count, views')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (error) {
       setStoriesError('Could not load your submissions.');
     } else {
-      setMyStories(data ?? []);
+      setMyStories((data ?? []) as Story[]);
     }
     setLoadingStories(false);
   }
@@ -250,6 +251,11 @@ export default function Profile() {
                         Edit &amp; resubmit
                       </Link>
                     )}
+                    <DeleteStoryButton
+                      storyId={story.id}
+                      storyTitle={story.title}
+                      onDeleted={fetchMyStories}
+                    />
                   </div>
                 </div>
               </article>

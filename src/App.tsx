@@ -6,11 +6,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Stories from './pages/Stories';
-import StoryDetail, { StoryDetailSlug } from './pages/StoryDetail';
-import WriterProfile from './pages/WriterProfile';
 import Writers from './pages/Writers';
 import CategoryArchive from './pages/CategoryArchive';
-import CollectionDetail from './pages/CollectionDetail';
+
+const StoryDetail = lazy(() => import('./pages/StoryDetail').then((m) => ({ default: m.default })));
+const StoryDetailSlug = lazy(() => import('./pages/StoryDetail').then((m) => ({ default: m.StoryDetailSlug })));
+const WriterProfile = lazy(() => import('./pages/WriterProfile'));
+const CollectionDetail = lazy(() => import('./pages/CollectionDetail'));
 import {
   PrivacyPolicyPage,
   CookiePolicyPage,
@@ -27,6 +29,7 @@ const EditProfile = lazy(() => import('./pages/EditProfile'));
 const OnboardingUsername = lazy(() => import('./pages/OnboardingUsername'));
 const EditStory = lazy(() => import('./pages/EditStory'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AdminPenNames = lazy(() => import('./pages/AdminPenNames'));
 
 const routerBasename =
   import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -41,25 +44,25 @@ function PageLoader() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter basename={routerBasename}>
+    <AuthProvider>
+      <BrowserRouter basename={routerBasename}>
+        <ErrorBoundary>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={<MainLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/stories" element={<Stories />} />
-              <Route path="/story/:id" element={<StoryDetail />} />
+              <Route path="/story/:id" element={<Suspense fallback={<PageLoader />}><StoryDetail /></Suspense>} />
               <Route path="/category/:categorySlug" element={<CategoryArchive />} />
-              <Route path="/writer/:username/collection/:collectionSlug" element={<CollectionDetail />} />
-              <Route path="/writer/:username" element={<WriterProfile />} />
+              <Route path="/writer/:username/collection/:collectionSlug" element={<Suspense fallback={<PageLoader />}><CollectionDetail /></Suspense>} />
+              <Route path="/writer/:username" element={<Suspense fallback={<PageLoader />}><WriterProfile /></Suspense>} />
               <Route path="/writers" element={<Writers />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/cookie-policy" element={<CookiePolicyPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/report-content" element={<ReportContentPage />} />
-              <Route path="/:categorySlug/:storySlug" element={<StoryDetailSlug />} />
+              <Route path="/:categorySlug/:storySlug" element={<Suspense fallback={<PageLoader />}><StoryDetailSlug /></Suspense>} />
               <Route
                 path="/onboarding/username"
                 element={
@@ -120,11 +123,21 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/pen-names"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <Suspense fallback={<PageLoader />}>
+                      <AdminPenNames />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

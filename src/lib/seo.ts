@@ -1,7 +1,7 @@
 import { getSiteOrigin } from './site';
 import { getStoryCanonicalPath, getCategoryPath, getWriterPath } from './slug';
 import { phraseForCategory } from './seoKeywords';
-import { storyPlainText } from './richText';
+import { storyPlainText } from './richTextPlain';
 import type { Story } from '../types';
 
 import { HOME_META } from './seoMeta';

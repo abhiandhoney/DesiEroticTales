@@ -177,7 +177,7 @@ export function AboutPage() {
         <p>
           <cite>
             &ldquo;Story Title&rdquo; — a slow-burn [Category] story on DesiEroticTales
-            (https://desierotictales.com/category-slug/story-slug)
+            (https://desierotictales.online/category-slug/story-slug)
           </cite>
         </p>
         <p>Each story page includes a ready-made citation block at the bottom.</p>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
@@ -6,17 +6,18 @@ import StoryCard from '../components/StoryCard';
 import StoryFilters from '../components/StoryFilters';
 import ResultsMeta from '../components/ResultsMeta';
 import EmptyState from '../components/EmptyState';
-import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
+import type { StoryAuthorDisplay } from '../types';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { buildStorySearchFilter } from '../lib/search';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
 import { STORIES_META } from '../lib/seoMeta';
-import CategoryNav from '../components/CategoryNav';
 import AdSlot from '../components/AdSlot';
 
-const LIST_COLUMNS =
-  'id, title, teaser, content, category, status, user_id, image_url, card_image_url, gallery_urls, views, like_count, dislike_count, is_editors_choice, editors_choice_at, slug, tags, created_at, updated_at';
+import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
+
+const LIST_COLUMNS = STORY_LIST_COLUMNS;
 
 export default function Stories() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,8 +30,9 @@ export default function Stories() {
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState<'newest' | 'popular' | 'top_rated' | 'trending'>('newest');
   const [page, setPage] = useState(0);
-  const [authors, setAuthors] = useState<AuthorMap>({});
+  const [authors, setAuthors] = useState<Record<string, StoryAuthorDisplay>>({});
   const debouncedSearch = useDebouncedValue(search, 350);
+  const fetchGen = useRef(0);
   const PAGE_SIZE = 24;
 
   usePageMeta({
@@ -46,11 +48,15 @@ export default function Stories() {
 
   useEffect(() => {
     setPage(0);
-    fetchStories(true);
+    const gen = ++fetchGen.current;
+    void fetchStories(true, gen);
   }, [category, sort, debouncedSearch]);
 
   useEffect(() => {
-    if (page > 0) fetchStories(false);
+    if (page > 0) {
+      const gen = fetchGen.current;
+      void fetchStories(false, gen);
+    }
   }, [page]);
 
   useEffect(() => {
@@ -63,7 +69,7 @@ export default function Stories() {
     setSearchParams(params, { replace: true });
   }, [debouncedSearch, searchParams, setSearchParams]);
 
-  async function fetchStories(reset = false) {
+  async function fetchStories(reset = false, generation = fetchGen.current) {
     if (reset) {
       setLoading(true);
       setStories([]);
@@ -106,6 +112,8 @@ export default function Stories() {
 
     const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
 
+    if (generation !== fetchGen.current) return;
+
     if (fetchError) {
       setError('Could not load stories. Please try again.');
       setLoading(false);
@@ -116,7 +124,11 @@ export default function Stories() {
     const list = (data ?? []) as Story[];
     setStories((prev) => {
       const next = reset ? list : [...prev, ...list];
-      if (next.length) fetchStoryAuthors(next.map((s) => s.user_id)).then(setAuthors);
+      if (next.length) {
+        fetchStoryAuthorDisplays(next).then((m) => {
+          if (generation === fetchGen.current) setAuthors(m);
+        });
+      }
       return next;
     });
     if (reset) setTotalCount(count ?? 0);
@@ -145,7 +157,6 @@ export default function Stories() {
         onSortChange={setSort}
       />
 
-      <CategoryNav title="Popular categories" />
       <AdSlot slot="stories-list" className="ad-slot-inline" />
 
       {error ? (
@@ -180,7 +191,7 @@ export default function Stories() {
         <>
           <ResultsMeta showing={stories.length} total={totalCount} />
           <div className="stories-grid">{stories.map((s) => (
-            <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+            <StoryCard key={s.id} story={s} authorDisplay={authors[s.id]} />
           ))}</div>
           {hasMore && (
             <div className="section-cta">

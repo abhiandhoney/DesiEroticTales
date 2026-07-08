@@ -1,5 +1,5 @@
 import type { Story } from '../types';
-import { storyPlainText } from './richText';
+import { storyPlainText } from './richTextPlain';
 
 /** Display text for story cards — uses teaser if set, otherwise truncates content. */
 export function getStoryTeaser(story: Story, maxLen = 200): string {

@@ -50,6 +50,10 @@ export default function DisqusComments({ story }: DisqusCommentsProps) {
     };
 
     load();
+
+    return () => {
+      if (hostRef.current) hostRef.current.innerHTML = '';
+    };
   }, [shortname, story.id, story.title, story.category, story.slug]);
 
   if (!shortname) return null;

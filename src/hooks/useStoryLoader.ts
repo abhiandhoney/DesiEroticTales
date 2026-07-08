@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { resolveStoryAuthorDisplay } from '../lib/storyAuthors';
 import { categoryToSlug, getStoryCanonicalPath, isUuid, slugToCategory } from '../lib/slug';
-import type { Profile, Story } from '../types';
+import type { Story, StoryAuthorDisplay } from '../types';
+import { getViewerHash } from '../lib/viewerHash';
 
 interface UseStoryLoaderOptions {
   /** Legacy `/story/:id` param (uuid or slug). */
@@ -14,7 +16,7 @@ interface UseStoryLoaderOptions {
 export function useStoryLoader({ legacyId, categorySlug, storySlug }: UseStoryLoaderOptions) {
   const navigate = useNavigate();
   const [story, setStory] = useState<Story | null>(null);
-  const [author, setAuthor] = useState<Pick<Profile, 'username' | 'display_name' | 'bio'> | null>(null);
+  const [author, setAuthor] = useState<StoryAuthorDisplay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const viewsCounted = useRef(false);
@@ -69,19 +71,17 @@ export function useStoryLoader({ legacyId, categorySlug, storySlug }: UseStoryLo
         return;
       }
 
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('username, display_name, bio')
-        .eq('id', loaded.user_id)
-        .maybeSingle();
-
-      if (!cancelled && prof?.username) {
-        setAuthor(prof as Pick<Profile, 'username' | 'display_name' | 'bio'>);
+      const display = await resolveStoryAuthorDisplay(loaded);
+      if (!cancelled && display) {
+        setAuthor(display);
       }
 
       if (!viewsCounted.current) {
         viewsCounted.current = true;
-        await supabase.rpc('increment_story_views', { story_id: loaded.id });
+        await supabase.rpc('increment_story_views', {
+          story_id: loaded.id,
+          viewer_hash: getViewerHash(),
+        });
       }
     }
 

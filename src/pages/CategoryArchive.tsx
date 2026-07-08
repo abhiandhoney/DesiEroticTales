@@ -1,28 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Story } from '../types';
 import StoryCard from '../components/StoryCard';
 import EmptyState from '../components/EmptyState';
-import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
+import type { StoryAuthorDisplay } from '../types';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildCollectionJsonLd, buildWebSiteJsonLd, buildCategoryFaqJsonLd } from '../lib/seo';
 import { getCategoryPath, slugToCategory } from '../lib/slug';
 import { categoryPageMeta } from '../lib/seoMeta';
 import CategoryIntro from '../components/CategoryIntro';
-import CategoryNav from '../components/CategoryNav';
+import StoryFilters from '../components/StoryFilters';
 import { keywordsForCategory, phraseForCategory } from '../lib/seoKeywords';
+import { STORY_CATEGORIES, type StoryCategory } from '../types';
 import AdSlot from '../components/AdSlot';
+import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 const PAGE_SIZE = 24;
 
 export default function CategoryArchive() {
+  const navigate = useNavigate();
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const category = categorySlug ? slugToCategory(categorySlug) : null;
   const [stories, setStories] = useState<Story[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [authors, setAuthors] = useState<AuthorMap>({});
+  const [error, setError] = useState('');
+  const [authors, setAuthors] = useState<Record<string, StoryAuthorDisplay>>({});
 
   const meta = category ? categoryPageMeta(category, totalCount) : null;
   const path = categorySlug ? getCategoryPath(category ?? categorySlug) : '/stories';
@@ -60,7 +65,7 @@ export default function CategoryArchive() {
           .eq('category', category),
         supabase
           .from('stories')
-          .select('id, title, teaser, content, category, status, user_id, image_url, card_image_url, gallery_urls, views, like_count, dislike_count, is_editors_choice, editors_choice_at, slug, tags, created_at, updated_at')
+          .select(STORY_LIST_COLUMNS)
           .eq('status', 'approved')
           .eq('category', category)
           .order('created_at', { ascending: false })
@@ -70,15 +75,17 @@ export default function CategoryArchive() {
       if (cancelled) return;
 
       if (error) {
+        setError('Could not load stories for this category.');
         setStories([]);
         setLoading(false);
         return;
       }
+      setError('');
 
       const list = (data ?? []) as Story[];
       setStories(list);
       setTotalCount(count ?? 0);
-      if (list.length) fetchStoryAuthors(list.map((s) => s.user_id)).then(setAuthors);
+      if (list.length) fetchStoryAuthorDisplays(list).then(setAuthors);
       setLoading(false);
     }
 
@@ -106,7 +113,15 @@ export default function CategoryArchive() {
         <h2 className="visually-hidden">Stories in {category}</h2>
       </header>
 
-      <CategoryNav title="More categories" activeCategory={category} />
+      <StoryFilters
+        category={category}
+        onCategoryChange={(next) => {
+          if (!next) navigate('/stories');
+          else if ((STORY_CATEGORIES as readonly string[]).includes(next)) {
+            navigate(getCategoryPath(next as StoryCategory));
+          }
+        }}
+      />
       <AdSlot slot="stories-list" />
 
       {loading ? (
@@ -115,12 +130,17 @@ export default function CategoryArchive() {
             <div key={i} className="skeleton skeleton-card" />
           ))}
         </div>
+      ) : error ? (
+        <EmptyState
+          message={error}
+          action={<button type="button" className="btn btn-ghost" onClick={() => window.location.reload()}>Retry</button>}
+        />
       ) : stories.length === 0 ? (
         <EmptyState message="No stories in this category yet." action={<Link to="/stories" className="btn btn-ghost">Browse all</Link>} />
       ) : (
         <div className="stories-grid">
           {stories.map((s) => (
-            <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+            <StoryCard key={s.id} story={s} authorDisplay={authors[s.id]} />
           ))}
         </div>
       )}

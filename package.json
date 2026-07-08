@@ -11,30 +11,38 @@
     "deploy": "node ./node_modules/wrangler/bin/wrangler.js deploy",
     "configure-auth": "node scripts/configure-supabase-auth.mjs",
     "lint": "node ./node_modules/oxlint/bin/oxlint",
+    "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
     "preview": "node ./node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
     "@tiptap/extension-image": "^3.27.3",
     "@tiptap/extension-link": "^3.27.3",
-    "@tiptap/extension-placeholder": "^3.27.3",
+
     "@tiptap/html": "^3.27.3",
     "@tiptap/pm": "^3.27.3",
     "@tiptap/react": "^3.27.3",
     "@tiptap/starter-kit": "^3.27.3",
+    "dompurify": "^3.4.11",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-image-crop": "^11.1.2",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.71.0",
     "sharp": "^0.35.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
+    "vitest": "^4.1.10",
     "wrangler": "^4.107.0"
   }
 }

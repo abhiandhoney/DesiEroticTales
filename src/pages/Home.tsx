@@ -10,10 +10,12 @@ import { getStoryTeaser } from '../lib/storyTeaser';
 import { fetchEditorsChoice, fetchStoryOfTheMonth, fetchStoryOfTheWeek } from '../lib/rankings';
 import SafeImage from '../components/SafeImage';
 import { getCardImageUrl } from '../lib/storyMedia';
-import { fetchStoryAuthors, type AuthorMap } from '../lib/storyAuthors';
+import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
+import type { StoryAuthorDisplay } from '../types';
 import { LikeStat } from '../components/LikeIcon';
 import { getStoryPath } from '../lib/slug';
 import AdSlot from '../components/AdSlot';
+import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 import { usePageMeta } from '../hooks/usePageMeta';
 import { HOME_META } from '../lib/seoMeta';
@@ -32,54 +34,65 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [category, setCategory] = useState('');
-  const [authors, setAuthors] = useState<AuthorMap>({});
+  const [authors, setAuthors] = useState<Record<string, StoryAuthorDisplay>>({});
+  const featured = storyOfWeek;
 
   useEffect(() => {
-    fetchStories();
-    if (!category) {
-      fetchStoryOfTheWeek().then(setStoryOfWeek);
-      fetchStoryOfTheMonth().then(setStoryOfMonth);
-      fetchEditorsChoice(4).then(setEditorsChoice);
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+
+      let countQuery = supabase
+        .from('stories')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved');
+      if (category) countQuery = countQuery.eq('category', category);
+
+      let query = supabase.from('stories').select(STORY_LIST_COLUMNS).eq('status', 'approved')
+        .order('created_at', { ascending: false }).limit(LATEST_LIMIT);
+      if (category) query = query.eq('category', category);
+
+      const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
+
+      if (cancelled) return;
+
+      if (fetchError) {
+        setError('Could not load stories. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const list = (data ?? []) as Story[];
+      setStories(list);
+      setTotalCount(count ?? list.length);
+      if (list.length) fetchStoryAuthorDisplays(list).then((m) => { if (!cancelled) setAuthors(m); });
+      setLoading(false);
     }
+
+    void load();
+
+    if (!category) {
+      fetchStoryOfTheWeek().then((s) => { if (!cancelled) setStoryOfWeek(s); });
+      fetchStoryOfTheMonth().then((s) => { if (!cancelled) setStoryOfMonth(s); });
+      fetchEditorsChoice(4).then((s) => { if (!cancelled) setEditorsChoice(s); });
+    }
+
+    return () => { cancelled = true; };
   }, [category]);
 
   useEffect(() => {
-    const ids = [...editorsChoice, ...stories].map((s) => s.user_id);
-    if (ids.length) fetchStoryAuthors(ids).then((m) => setAuthors((prev) => ({ ...prev, ...m })));
-  }, [editorsChoice, stories]);
-
-  async function fetchStories() {
-    setLoading(true);
-    setError('');
-
-    let countQuery = supabase
-      .from('stories')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved');
-    if (category) countQuery = countQuery.eq('category', category);
-
-    let query = supabase.from('stories').select('*').eq('status', 'approved')
-      .order('created_at', { ascending: false }).limit(LATEST_LIMIT);
-    if (category) query = query.eq('category', category);
-
-    const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
-
-    if (fetchError) {
-      setError('Could not load stories. Please try again.');
-      setLoading(false);
-      return;
+    const all = [
+      ...editorsChoice,
+      ...stories,
+      ...(featured ? [featured] : []),
+      ...(storyOfMonth ? [storyOfMonth] : []),
+    ];
+    if (all.length) {
+      fetchStoryAuthorDisplays(all).then((m) => setAuthors((prev) => ({ ...prev, ...m })));
     }
-
-    const list = data ?? [];
-    setStories(list);
-    setTotalCount(count ?? list.length);
-    if (list.length) {
-      fetchStoryAuthors(list.map((s) => s.user_id)).then(setAuthors);
-    }
-    setLoading(false);
-  }
-
-  const featured = storyOfWeek;
+  }, [editorsChoice, stories, featured, storyOfMonth]);
 
   const origin = window.location.origin;
   const featuredList = featured
@@ -148,6 +161,11 @@ export default function Home() {
             <div className="featured-story-body">
               <span className="story-category">Most liked this week · {featured.category}</span>
               <h3 className="featured-story-title">{featured.title}</h3>
+              {authors[featured.id] && (
+                <p className="featured-story-author">
+                  By {authors[featured.id].displayName}
+                </p>
+              )}
               <p className="featured-story-teaser">{getStoryTeaser(featured, 180)}</p>
               <span className="featured-story-cta">
                 <LikeStat count={featured.like_count ?? 0} />
@@ -173,6 +191,11 @@ export default function Home() {
             <div className="featured-story-body">
               <span className="story-category">Most liked this month · {storyOfMonth.category}</span>
               <h3 className="featured-story-title">{storyOfMonth.title}</h3>
+              {authors[storyOfMonth.id] && (
+                <p className="featured-story-author">
+                  By {authors[storyOfMonth.id].displayName}
+                </p>
+              )}
               <p className="featured-story-teaser">{getStoryTeaser(storyOfMonth, 180)}</p>
               <span className="featured-story-cta">
                 <LikeStat count={storyOfMonth.like_count ?? 0} />
@@ -189,7 +212,7 @@ export default function Home() {
           <h2 className="section-title">Editor&apos;s Choice</h2>
           <div className="stories-grid stories-grid-compact">
             {editorsChoice.map((s) => (
-              <StoryCard key={s.id} story={s} badge="Editor's Choice" authorUsername={authors[s.user_id]?.username} />
+              <StoryCard key={s.id} story={s} badge="Editor's Choice" authorDisplay={authors[s.id]} />
             ))}
           </div>
         </section>
@@ -211,8 +234,6 @@ export default function Home() {
         </section>
       )}
 
-      <CategoryNav />
-
       <AdSlot slot="top-banner" className="ad-slot-top" />
 
       <StoryFilters category={category} onCategoryChange={setCategory} />
@@ -222,7 +243,7 @@ export default function Home() {
         {error ? (
           <EmptyState
             message={error}
-            action={<button type="button" className="btn btn-ghost" onClick={fetchStories}>Retry</button>}
+            action={<button type="button" className="btn btn-ghost" onClick={() => window.location.reload()}>Retry</button>}
           />
         ) : loading ? (
           <div className="stories-grid" aria-busy="true">
@@ -238,7 +259,7 @@ export default function Home() {
         ) : (
           <>
             <div className="stories-grid">{stories.map((s) => (
-              <StoryCard key={s.id} story={s} authorUsername={authors[s.user_id]?.username} />
+              <StoryCard key={s.id} story={s} authorDisplay={authors[s.id]} />
             ))}</div>
             {totalCount > LATEST_LIMIT && (
               <div className="section-cta">

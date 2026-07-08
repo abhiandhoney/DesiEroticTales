@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { checkUsernameAvailable, updateProfile } from '../lib/profile';
 import { validateUsername } from '../lib/username';
 import PageHeader from '../components/PageHeader';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function OnboardingUsername() {
   const { user, profile, refreshProfile } = useAuth();
@@ -13,6 +14,13 @@ export default function OnboardingUsername() {
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  usePageMeta({
+    title: 'Choose Username | DesiEroticTales',
+    description: 'Set your writer username.',
+    path: '/onboarding/username',
+    noIndex: true,
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,8 +68,13 @@ export default function OnboardingUsername() {
     setChecking(false);
   }
 
+  useEffect(() => {
+    if (profile?.onboarding_complete) {
+      navigate('/profile', { replace: true });
+    }
+  }, [profile?.onboarding_complete, navigate]);
+
   if (profile?.onboarding_complete) {
-    navigate('/profile', { replace: true });
     return null;
   }
 

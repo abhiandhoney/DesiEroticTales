@@ -3,6 +3,7 @@ import type { Story, StoryStatus } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import StoryMediaGallery from './StoryMediaGallery';
+import StoryRichContent from './StoryRichContent';
 
 interface StoryReviewModalProps {
   story: Story;
@@ -17,8 +18,6 @@ export default function StoryReviewModal({
   onUpdateStatus,
   actionLoading,
 }: StoryReviewModalProps) {
-  const paragraphs = story.content.split(/\n\n+/).filter(Boolean);
-
   useBodyScrollLock(true);
   const trapRef = useFocusTrap(true);
 
@@ -66,9 +65,7 @@ export default function StoryReviewModal({
 
         <div className="review-content">
           <span className="review-label">Full story</span>
-          {paragraphs.map((para, i) => (
-            <p key={i} className="story-paragraph">{para}</p>
-          ))}
+          <StoryRichContent story={story} />
         </div>
 
         <div className="modal-footer">

@@ -17,6 +17,26 @@ export interface Profile {
 export const TEASER_MAX_LENGTH = 250;
 export const BIO_MAX_LENGTH = 500;
 
+export interface AuthorProfile {
+  id: string;
+  created_by: string;
+  name: string;
+  slug: string;
+  avatar_url: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/** Public-facing author info for a story (pen name or real writer). */
+export interface StoryAuthorDisplay {
+  slug: string;
+  displayName: string;
+  avatarUrl: string | null;
+  bio?: string | null;
+  isPenName: boolean;
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -27,6 +47,7 @@ export interface Story {
   category: string;
   status: StoryStatus;
   user_id: string;
+  author_profile_id: string | null;
   image_url: string | null;
   card_image_url: string | null;
   gallery_urls: string[] | null;

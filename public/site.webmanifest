@@ -1,6 +1,6 @@
 {
   "name": "DesiEroticTales",
-  "short_name": "DET",
+  "short_name": "Desi Tales",
   "description": "Telugu and Desi erotic fiction across 20+ categories.",
   "start_url": "/",
   "display": "standalone",
@@ -12,6 +12,18 @@
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/og-image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/brand/logo-mark.svg",

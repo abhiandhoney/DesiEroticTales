@@ -16,8 +16,8 @@ export default function Submit() {
     noIndex: SUBMIT_META.noIndex,
   });
 
-  function handleCreateSuccess() {
-    setSuccess(true);
+  function handleCreateSuccess(result: { status: string }) {
+    if (result.status === 'pending') setSuccess(true);
   }
 
   if (success) {

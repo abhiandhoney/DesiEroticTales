@@ -1,47 +1,63 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ReactCrop, {
+  centerCrop,
+  convertToPixelCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import {
-  defaultCropTransform,
-  loadImageFromFile,
-  loadImageFromUrl,
-  renderCoverWebP,
-  type CropTransform,
+  CARD_COVER_HEIGHT,
+  CARD_COVER_WIDTH,
+  COVER_ASPECT,
+  exportCroppedWebP,
+  FULL_COVER_HEIGHT,
+  FULL_COVER_WIDTH,
 } from '../lib/imageProcessing';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
+export interface CoverCropResult {
+  cardBlob: Blob;
+  cardPreviewUrl: string;
+  fullBlob: Blob;
+}
+
 interface ImageCropModalProps {
   file?: File;
   imageUrl?: string;
-  onApply: (webpBlob: Blob, previewUrl: string) => void;
+  onApply: (result: CoverCropResult) => void;
   onClose: () => void;
 }
 
+function centerAspectCrop(width: number, height: number): Crop {
+  return centerCrop(
+    makeAspectCrop({ unit: '%', width: 92 }, COVER_ASPECT, width, height),
+    width,
+    height,
+  );
+}
+
 export default function ImageCropModal({ file, imageUrl, onApply, onClose }: ImageCropModalProps) {
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [transform, setTransform] = useState<CropTransform>(defaultCropTransform());
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [scale, setScale] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const [cardPreviewUrl, setCardPreviewUrl] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let url = imageUrl || '';
     let objectUrl = '';
-
-    if (file) {
-      objectUrl = URL.createObjectURL(file);
-      url = objectUrl;
-    }
-
-    if (url) {
-      setPreviewUrl(url);
-      const loader = file ? loadImageFromFile(file) : loadImageFromUrl(url);
-      loader
-        .then(setImg)
-        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load image'));
-    }
-
+    const url = file ? ((objectUrl = URL.createObjectURL(file)), objectUrl) : (imageUrl ?? '');
+    setPreviewUrl(url);
+    setCrop(undefined);
+    setCompletedCrop(undefined);
+    setScale(1);
+    setCardPreviewUrl(null);
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
@@ -58,59 +74,58 @@ export default function ImageCropModal({ file, imageUrl, onApply, onClose }: Ima
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  useLayoutEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
+  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const next = centerAspectCrop(width, height);
+    setCrop(next);
+    setCompletedCrop(convertToPixelCrop(next, width, height));
+  }, []);
 
-    function onWheel(e: WheelEvent) {
-      e.preventDefault();
-      setTransform((t) => ({
-        ...t,
-        scale: Math.min(3, Math.max(1, t.scale + (e.deltaY > 0 ? -0.08 : 0.08))),
-      }));
+  useEffect(() => {
+    if (!completedCrop || !imgRef.current || completedCrop.width < 1 || completedCrop.height < 1) {
+      return;
     }
-
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [previewUrl]);
-
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    dragRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      ox: transform.offsetX,
-      oy: transform.offsetY,
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    previewTimer.current = setTimeout(async () => {
+      try {
+        const blob = await exportCroppedWebP(
+          imgRef.current!,
+          completedCrop,
+          320,
+          180,
+          scale,
+        );
+        setCardPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(blob);
+        });
+      } catch {
+        // Preview is best-effort.
+      }
+    }, 120);
+    return () => {
+      if (previewTimer.current) clearTimeout(previewTimer.current);
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, [transform.offsetX, transform.offsetY]);
+  }, [completedCrop, scale]);
 
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
-    const drag = dragRef.current;
-    if (!drag) return;
-    setTransform((t) => ({
-      ...t,
-      offsetX: drag.ox + (e.clientX - drag.x),
-      offsetY: drag.oy + (e.clientY - drag.y),
-    }));
-  }, []);
-
-  const onPointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    dragRef.current = null;
-  }, []);
+  useEffect(() => {
+    return () => {
+      if (cardPreviewUrl) URL.revokeObjectURL(cardPreviewUrl);
+    };
+  }, [cardPreviewUrl]);
 
   async function handleApply() {
-    if (!img) return;
+    const img = imgRef.current;
+    if (!img || !completedCrop || completedCrop.width < 1 || completedCrop.height < 1) return;
     setSaving(true);
     setError('');
     try {
-      const blob = await renderCoverWebP(img, transform);
-      const croppedPreview = URL.createObjectURL(blob);
-      onApply(blob, croppedPreview);
+      const [cardBlob, fullBlob] = await Promise.all([
+        exportCroppedWebP(img, completedCrop, CARD_COVER_WIDTH, CARD_COVER_HEIGHT, scale),
+        exportCroppedWebP(img, completedCrop, FULL_COVER_WIDTH, FULL_COVER_HEIGHT, scale),
+      ]);
+      const croppedPreview = URL.createObjectURL(cardBlob);
+      onApply({ cardBlob, cardPreviewUrl: croppedPreview, fullBlob });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not crop image');
       setSaving(false);
@@ -129,8 +144,8 @@ export default function ImageCropModal({ file, imageUrl, onApply, onClose }: Ima
       >
         <div className="modal-header">
           <div>
-            <h2 id="crop-title" className="modal-title">Adjust cover</h2>
-            <p className="modal-meta">Drag to reposition · scroll or slider to zoom</p>
+            <h2 id="crop-title" className="modal-title">Position cover photo</h2>
+            <p className="modal-meta">Drag to reposition · pinch or slider to zoom · 16:9 card crop</p>
           </div>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
             &times;
@@ -139,28 +154,44 @@ export default function ImageCropModal({ file, imageUrl, onApply, onClose }: Ima
 
         {error && <div className="form-error crop-error">{error}</div>}
 
-        <div
-          ref={viewportRef}
-          className="crop-viewport"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
-        >
-          {previewUrl ? (
-            <img
-              className="crop-image"
-              src={previewUrl}
-              alt="Crop preview"
-              draggable={false}
-              style={{
-                transform: `translate(calc(-50% + ${transform.offsetX}px), calc(-50% + ${transform.offsetY}px)) scale(${transform.scale})`,
-              }}
-            />
-          ) : (
-            <div className="crop-loading"><div className="spinner" /></div>
-          )}
-          <div className="crop-frame" aria-hidden="true" />
+        <div className="crop-workspace">
+          <div className="crop-editor">
+            {previewUrl ? (
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={COVER_ASPECT}
+                locked
+                className="crop-react-root"
+              >
+                <img
+                  ref={imgRef}
+                  className="crop-react-image"
+                  src={previewUrl}
+                  alt="Crop source"
+                  style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+                  onLoad={onImageLoad}
+                  draggable={false}
+                />
+              </ReactCrop>
+            ) : (
+              <div className="crop-loading"><div className="spinner" /></div>
+            )}
+          </div>
+
+          <aside className="crop-card-preview" aria-label="Story card preview">
+            <p className="crop-preview-label">Card preview</p>
+            <div className="crop-card-mock">
+              {cardPreviewUrl ? (
+                <img src={cardPreviewUrl} alt="" className="crop-card-mock-image" />
+              ) : (
+                <div className="crop-card-mock-placeholder">Preview</div>
+              )}
+              <span className="crop-card-mock-badge">Category</span>
+            </div>
+            <p className="form-hint">How your cover appears in story listings.</p>
+          </aside>
         </div>
 
         <div className="crop-controls">
@@ -171,8 +202,8 @@ export default function ImageCropModal({ file, imageUrl, onApply, onClose }: Ima
             min={1}
             max={3}
             step={0.01}
-            value={transform.scale}
-            onChange={(e) => setTransform((t) => ({ ...t, scale: Number(e.target.value) }))}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
           />
         </div>
 
@@ -181,8 +212,13 @@ export default function ImageCropModal({ file, imageUrl, onApply, onClose }: Ima
             <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
               Cancel
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleApply} disabled={!img || saving}>
-              {saving ? 'Processing...' : 'Use as cover'}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleApply}
+              disabled={!completedCrop || saving}
+            >
+              {saving ? 'Processing...' : 'Use cover'}
             </button>
           </div>
         </div>

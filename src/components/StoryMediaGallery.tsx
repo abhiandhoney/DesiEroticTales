@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getStoryMediaUrls } from '../lib/storyMedia';
 import type { Story } from '../types';
-import SafeImage from './SafeImage';
+import ResolvedImage from './ResolvedImage';
 
 interface StoryMediaGalleryProps {
   story: Story;
@@ -53,7 +53,7 @@ export default function StoryMediaGallery({ story }: StoryMediaGalleryProps) {
       }}
     >
       <div className="steam-gallery-main">
-        <SafeImage
+        <ResolvedImage
           key={urls[active]}
           src={urls[active]}
           alt={`${story.title} — image ${active + 1}`}
@@ -97,7 +97,7 @@ export default function StoryMediaGallery({ story }: StoryMediaGalleryProps) {
               className={`steam-gallery-thumb ${i === active ? 'active' : ''}`}
               onClick={() => setActive(i)}
             >
-              <img src={url} alt="" loading="lazy" />
+              <ResolvedImage src={url} alt="" loading="lazy" />
             </button>
           ))}
         </div>

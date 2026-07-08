@@ -15,14 +15,14 @@ import StoryRichContent from '../components/StoryRichContent';
 import CollectionNav from '../components/CollectionNav';
 import WriterCitationBlock from '../components/WriterCitationBlock';
 import { fetchStoryCollectionLink, type StoryCollectionLink } from '../lib/collections';
-import { storyPlainText } from '../lib/richText';
+import { storyPlainText } from '../lib/richTextPlain';
 import { useStoryLoader } from '../hooks/useStoryLoader';
 import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
 import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
 import { storyPageMeta } from '../lib/seoMeta';
-import CategoryNav from '../components/CategoryNav';
 import AdSlot from '../components/AdSlot';
 import DisqusComments from '../components/DisqusComments';
+import ProfileAvatar from '../components/ProfileAvatar';
 import NotFound from './NotFound';
 
 interface StoryDetailInnerProps {
@@ -53,7 +53,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
   });
 
   const canonicalPath = story?.slug ? getStoryCanonicalPath(story) : undefined;
-  const seo = story ? storyPageMeta(story, { authorUsername: author?.username ?? undefined }) : null;
+  const seo = story ? storyPageMeta(story, { authorUsername: author?.slug ?? undefined }) : null;
   const readTimeLabel = story ? formatReadTime(estimateReadTime(storyPlainText(story))) : '';
 
   usePageMeta({
@@ -67,12 +67,12 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
     jsonLd: story && seo
       ? [
           buildArticleJsonLd(story, {
-            authorName: author?.username ? `@${author.username}` : undefined,
-            authorUrl: author?.username ? getWriterPath(author.username) : undefined,
+            authorName: author?.displayName,
+            authorUrl: author ? getWriterPath(author.slug) : undefined,
             description: seo.description,
             image: getCardImageUrl(story),
           }),
-          buildBreadcrumbJsonLd(storyBreadcrumbs(story, author?.username ?? undefined)),
+          buildBreadcrumbJsonLd(storyBreadcrumbs(story, author?.slug ?? undefined)),
         ]
       : undefined,
   });
@@ -113,15 +113,18 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
           <span className="story-badge-editors">Editor&apos;s Choice</span>
         )}
         <h1 className="story-detail-title">{story.title}</h1>
-        {author?.username && (
+        {author && (
           <p className="story-author-line">
+            <ProfileAvatar
+              name={author.displayName}
+              avatarUrl={author.avatarUrl}
+              size="sm"
+              className="story-author-avatar"
+            />
             By{' '}
-            <Link to={getWriterPath(author.username)} className="story-author-link">
-              @{author.username}
+            <Link to={getWriterPath(author.slug)} className="story-author-link">
+              {author.displayName}
             </Link>
-            {author.display_name && author.display_name !== author.username && (
-              <span className="story-author-display"> ({author.display_name})</span>
-            )}
           </p>
         )}
         <div className="story-detail-meta">
@@ -155,25 +158,23 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
         <CollectionNav
           link={collectionLink}
           currentStoryId={story.id}
-          writerUsername={author?.username ?? undefined}
+          writerUsername={author?.slug ?? undefined}
         />
       )}
       <StorySummaryPanel
         story={story}
         readTime={readTimeLabel}
-        author={author?.username
-          ? { username: author.username, display_name: author.display_name }
-          : undefined}
+        author={author ? { slug: author.slug, displayName: author.displayName } : undefined}
       />
       <StoryMediaGallery story={story} />
       <AdSlot slot="story-top" className="ad-slot-story-top" />
       <StoryRichContent story={story} className={`story-content ${contentClass}`} />
-      {author?.username && (
+      {author && (
         <WriterCitationBlock
           story={story}
           author={{
-            username: author.username,
-            display_name: author.display_name,
+            slug: author.slug,
+            displayName: author.displayName,
             bio: author.bio,
           }}
         />
@@ -196,7 +197,6 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
       <AdSlot slot="story-bottom" className="ad-slot-story-bottom" />
       <DisqusComments story={story} />
       <RelatedStoriesSection storyId={story.id} category={story.category} />
-      <CategoryNav title={`More ${story.category} stories`} activeCategory={story.category} />
     </article>
   );
 }

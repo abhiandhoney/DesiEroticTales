@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/core';
-import { richTextExtensions } from '../lib/richText';
+import { isSafeStoryLink, richTextExtensions } from '../lib/richTextEditor';
 import { convertFileToWebP } from '../lib/imageProcessing';
-import { uploadStoryImageBlob } from '../lib/storyImages';
+import { uploadStoryImageBlob, type ImageVisibility } from '../lib/storyImages';
+
+/** Applied to the ProseMirror contenteditable root for native browser spell check. */
+const EDITOR_SPELLCHECK_ATTRS = {
+  class: 'rich-editor__content',
+  spellcheck: 'true',
+  autocorrect: 'off',
+  autocapitalize: 'off',
+  lang: 'en',
+} as const;
+
+function applySpellcheckAttrs(dom: HTMLElement) {
+  dom.spellcheck = true;
+  dom.setAttribute('spellcheck', 'true');
+  dom.setAttribute('autocorrect', 'off');
+  dom.setAttribute('autocapitalize', 'off');
+  dom.setAttribute('lang', 'en');
+}
 
 interface RichTextEditorProps {
   value: JSONContent;
@@ -11,6 +28,7 @@ interface RichTextEditorProps {
   userId: string;
   disabled?: boolean;
   placeholder?: string;
+  imageVisibility?: ImageVisibility;
 }
 
 export default function RichTextEditor({
@@ -19,22 +37,24 @@ export default function RichTextEditor({
   userId,
   disabled = false,
   placeholder = 'Write your story…',
+  imageVisibility = 'draft',
 }: RichTextEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const lastSyncedRef = useRef('');
 
   const editor = useEditor({
     extensions: richTextExtensions,
     content: value,
     editable: !disabled,
     onUpdate: ({ editor: ed }) => {
-      onChangeRef.current(ed.getJSON(), ed.getHTML());
+      const json = ed.getJSON();
+      lastSyncedRef.current = JSON.stringify(json);
+      onChangeRef.current(json, ed.getHTML());
     },
     editorProps: {
-      attributes: {
-        class: 'rich-editor__content',
-      },
+      attributes: EDITOR_SPELLCHECK_ATTRS,
     },
   });
 
@@ -43,12 +63,44 @@ export default function RichTextEditor({
     editor.setEditable(!disabled);
   }, [editor, disabled]);
 
+  useEffect(() => {
+    if (!editor) return;
+    applySpellcheckAttrs(editor.view.dom as HTMLElement);
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const fp = JSON.stringify(value);
+    if (fp === lastSyncedRef.current) return;
+    editor.commands.setContent(value, { emitUpdate: false });
+    lastSyncedRef.current = fp;
+  }, [editor, value]);
+
+  useEffect(() => {
+    return () => {
+      if (editor && !editor.isDestroyed) {
+        editor.destroy();
+      }
+    };
+  }, [editor]);
+
+  const runSpellCheck = useCallback(() => {
+    if (!editor || disabled) return;
+    const dom = editor.view.dom as HTMLElement;
+    applySpellcheckAttrs(dom);
+    // Toggle spellcheck to nudge the browser to re-scan the document.
+    dom.spellcheck = false;
+    void dom.offsetHeight;
+    dom.spellcheck = true;
+    editor.chain().focus().run();
+  }, [editor, disabled]);
+
   const uploadImage = useCallback(async (file: File) => {
     if (!editor) return;
     const blob = await convertFileToWebP(file);
-    const url = await uploadStoryImageBlob(userId, blob, 'inline');
+    const url = await uploadStoryImageBlob(userId, blob, 'inline', imageVisibility);
     editor.chain().focus().setImage({ src: url, alt: file.name }).run();
-  }, [editor, userId]);
+  }, [editor, userId, imageVisibility]);
 
   if (!editor) return <div className="rich-editor rich-editor--loading">Loading editor…</div>;
 
@@ -92,7 +144,11 @@ export default function RichTextEditor({
               editor.chain().focus().extendMarkRange('link').unsetLink().run();
               return;
             }
-            editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+            if (!isSafeStoryLink(url)) {
+              window.alert('Links must start with http:// or https://');
+              return;
+            }
+            editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
           }}
           disabled={disabled}
         >
@@ -105,6 +161,17 @@ export default function RichTextEditor({
           disabled={disabled}
         >
           Image
+        </button>
+        <span className="rich-editor__toolbar-sep" aria-hidden="true" />
+        <button
+          type="button"
+          className="rich-editor__btn rich-editor__btn--spell"
+          onClick={runSpellCheck}
+          disabled={disabled}
+          aria-label="Check spelling"
+          title="Check spelling — right-click a highlighted word for suggestions"
+        >
+          ABC<span className="rich-editor__spell-mark" aria-hidden="true">✓</span>
         </button>
       </div>
       <input
@@ -123,7 +190,12 @@ export default function RichTextEditor({
           }
         }}
       />
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        spellCheck
+        className="rich-editor__surface"
+        aria-label="Story body"
+      />
       {!editor.getText().trim() && (
         <div className="rich-editor__placeholder" aria-hidden="true">{placeholder}</div>
       )}

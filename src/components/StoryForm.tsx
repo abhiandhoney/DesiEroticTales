@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { JSONContent } from '@tiptap/core';
 import { useConfirm } from '../hooks/useConfirm';
+import { useStoryAutosave } from '../hooks/useStoryAutosave';
 import { useToast } from '../hooks/useToast';
+import { clearStoryDraftCache } from '../lib/storyDraftCache';
 import { supabase } from '../lib/supabase';
-import { deleteStoryImages, uploadStoryImageBlob } from '../lib/storyImages';
+import { deleteStoryImages, uploadStoryImageBlob, type ImageVisibility } from '../lib/storyImages';
+import { promoteStoryMediaForPublish } from '../lib/promoteStoryImages';
 import StoryCoverUploader, { type CoverUploadState } from './StoryCoverUploader';
 import RichTextEditor from './RichTextEditor';
 import CollectionSelector from './CollectionSelector';
+import AuthorProfileSelector from './AuthorProfileSelector';
 import { formatTags, parseTagsInput } from '../lib/slug';
 import {
   applyCollectionLink,
   loadCollectionFormValue,
   type CollectionFormValue,
 } from '../lib/collections';
-import {
-  emptyRichDoc,
-  jsonToHtml,
-  jsonToPlainText,
-  minPlainLength,
-  parseStoryDoc,
-} from '../lib/richText';
+import { emptyRichDoc, jsonToPlainText, minPlainLength } from '../lib/richTextPlain';
+import { jsonToHtml, parseStoryDoc } from '../lib/richTextEditor';
+import { sanitizeStoryHtml } from '../lib/sanitizeHtml';
 import {
   STORY_CATEGORIES,
   TEASER_MAX_LENGTH,
@@ -28,12 +28,17 @@ import {
   type StoryStatus,
 } from '../types';
 
+export interface StoryFormSuccess {
+  status: StoryStatus;
+  storyId: string;
+}
+
 interface StoryFormProps {
   mode: 'create' | 'edit';
   story?: Story;
   userId: string;
   isAdmin?: boolean;
-  onSuccess: () => void;
+  onSuccess?: (result: StoryFormSuccess) => void;
   onCancel?: () => void;
 }
 
@@ -41,6 +46,7 @@ const emptyCoverState = (): CoverUploadState => ({
   coverFullBlob: null,
   coverCardBlob: null,
   coverCardDisplayUrl: null,
+  coverFullDisplayUrl: null,
   persistedFullCoverUrl: null,
   persistedCardCoverUrl: null,
   removedCoverUrls: [],
@@ -67,10 +73,179 @@ export default function StoryForm({
   const [status, setStatus] = useState<StoryStatus>(story?.status ?? 'pending');
   const [coverState, setCoverState] = useState<CoverUploadState>(emptyCoverState());
   const [collectionValue, setCollectionValue] = useState<CollectionFormValue>({ mode: 'none' });
+  const [authorProfileId, setAuthorProfileId] = useState<string | null>(
+    story?.author_profile_id ?? null,
+  );
+  const [savedStoryId, setSavedStoryId] = useState<string | undefined>(story?.id);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const persistLock = useRef(false);
+
+  function resolveAutosaveStatus(): StoryStatus {
+    if (mode === 'create' || !story) return 'draft';
+    if (story.status === 'pending' || story.status === 'rejected') return story.status;
+    return 'draft';
+  }
+
+  function resolveSubmitStatus(): StoryStatus {
+    if (story?.status === 'draft' || (mode === 'create' && !story)) return 'pending';
+    if (!isAdmin && story?.status === 'rejected') return 'pending';
+    if (isAdmin && mode === 'edit') return status;
+    return status;
+  }
   const { confirm } = useConfirm();
   const { toast } = useToast();
+
+  const autosaveSnapshot = useMemo(
+    () => ({
+      title,
+      teaser,
+      category,
+      tagsInput,
+      contentDoc,
+      contentHtml,
+      authorProfileId,
+      coverPersistedFullUrl: coverState.persistedFullCoverUrl,
+      coverPersistedCardUrl: coverState.persistedCardCoverUrl,
+      collectionValue,
+    }),
+    [
+      title,
+      teaser,
+      category,
+      tagsInput,
+      contentDoc,
+      contentHtml,
+      authorProfileId,
+      coverState.persistedFullCoverUrl,
+      coverState.persistedCardCoverUrl,
+      collectionValue,
+    ],
+  );
+
+  const restoreFromCache = useCallback((snapshot: typeof autosaveSnapshot) => {
+    setTitle(snapshot.title);
+    setTeaser(snapshot.teaser);
+    setCategory(snapshot.category);
+    setTagsInput(snapshot.tagsInput);
+    setContentDoc(snapshot.contentDoc);
+    setContentHtml(snapshot.contentHtml);
+    setAuthorProfileId(snapshot.authorProfileId);
+    setCollectionValue(snapshot.collectionValue ?? { mode: 'none' });
+    setCoverState((prev) => ({
+      ...prev,
+      coverFullBlob: null,
+      coverCardBlob: null,
+      coverCardDisplayUrl: snapshot.coverPersistedCardUrl,
+      coverFullDisplayUrl: snapshot.coverPersistedFullUrl,
+      persistedFullCoverUrl: snapshot.coverPersistedFullUrl,
+      persistedCardCoverUrl: snapshot.coverPersistedCardUrl,
+    }));
+  }, []);
+
+  function buildSanitizedHtml(): string {
+    const raw = contentHtml || jsonToHtml(contentDoc);
+    return sanitizeStoryHtml(raw);
+  }
+
+  const syncDraftToSupabase = useCallback(async (existingId?: string) => {
+    const plain = jsonToPlainText(contentDoc).trim();
+    const html = buildSanitizedHtml();
+    const cover = await uploadCover('draft');
+
+    const payload = {
+      title: title.trim(),
+      teaser: teaser.trim() || null,
+      content: plain,
+      content_json: contentDoc,
+      content_html: html,
+      category,
+      tags: parseTagsInput(tagsInput),
+      status: resolveAutosaveStatus(),
+      image_url: cover.full,
+      card_image_url: cover.card,
+      ...(isAdmin ? { author_profile_id: authorProfileId } : {}),
+    };
+
+    let storyId = existingId ?? savedStoryId ?? story?.id;
+
+    if (!storyId) {
+      const { data, error: insertError } = await supabase
+        .from('stories')
+        .insert({ ...payload, user_id: userId, status: 'draft' })
+        .select('id')
+        .single();
+      if (insertError) throw insertError;
+      storyId = data.id;
+      setSavedStoryId(data.id);
+    } else {
+      const { error: updateError } = await supabase
+        .from('stories')
+        .update(payload)
+        .eq('id', storyId);
+      if (updateError) throw updateError;
+    }
+
+    if (storyId) {
+      await applyCollectionLink(storyId, userId, collectionValue);
+    }
+
+    if (cover.full || cover.card) {
+      setCoverState((prev) => ({
+        ...prev,
+        coverFullBlob: null,
+        coverCardBlob: null,
+        persistedFullCoverUrl: cover.full,
+        persistedCardCoverUrl: cover.card,
+        coverFullDisplayUrl: cover.full,
+        coverCardDisplayUrl: cover.card ?? cover.full,
+      }));
+    }
+
+    if (!storyId) throw new Error('Draft sync failed.');
+    return storyId;
+  }, [
+    contentDoc,
+    contentHtml,
+    title,
+    teaser,
+    category,
+    tagsInput,
+    isAdmin,
+    authorProfileId,
+    savedStoryId,
+    story?.id,
+    userId,
+    collectionValue,
+    coverState,
+  ]);
+
+  const autosaveEnabled = story?.status !== 'approved';
+
+  const {
+    status: autosaveStatus,
+    statusMessage: autosaveMessage,
+    cancelPendingSync,
+    markRemoteSaved,
+    isAutosaveEligible,
+  } = useStoryAutosave({
+    userId,
+    storyId: savedStoryId ?? story?.id,
+    storyUpdatedAt: story?.updated_at,
+    storyStatus: story?.status,
+    mode,
+    snapshot: autosaveSnapshot,
+    enabled: autosaveEnabled,
+    canSyncRemote: validateDraft,
+    onRestore: restoreFromCache,
+    onStoryId: setSavedStoryId,
+    syncToSupabase: syncDraftToSupabase,
+  });
+
+  useEffect(() => {
+    setSavedStoryId(story?.id);
+    setAuthorProfileId(story?.author_profile_id ?? null);
+  }, [story?.id, story?.author_profile_id]);
 
   useEffect(() => {
     if (story?.id) {
@@ -78,15 +253,17 @@ export default function StoryForm({
     }
   }, [story?.id]);
 
-  async function uploadCover(): Promise<{ full: string | null; card: string | null }> {
+  async function uploadCover(
+    visibility: ImageVisibility = story?.status === 'approved' ? 'published' : 'draft',
+  ): Promise<{ full: string | null; card: string | null }> {
     let full = coverState.persistedFullCoverUrl;
     let card = coverState.persistedCardCoverUrl;
 
     if (coverState.coverFullBlob) {
-      full = await uploadStoryImageBlob(userId, coverState.coverFullBlob, 'cover-full');
+      full = await uploadStoryImageBlob(userId, coverState.coverFullBlob, 'cover-full', visibility);
     }
     if (coverState.coverCardBlob) {
-      card = await uploadStoryImageBlob(userId, coverState.coverCardBlob, 'cover-card');
+      card = await uploadStoryImageBlob(userId, coverState.coverCardBlob, 'cover-card', visibility);
     } else if (full) {
       card = full;
     }
@@ -98,7 +275,7 @@ export default function StoryForm({
     cover: { full: string | null; card: string | null },
   ) {
     const plain = jsonToPlainText(contentDoc).trim();
-    const html = contentHtml || jsonToHtml(contentDoc);
+    const html = buildSanitizedHtml();
     return {
       title: title.trim(),
       teaser: teaser.trim() || null,
@@ -110,7 +287,8 @@ export default function StoryForm({
       status: targetStatus,
       image_url: cover.full,
       card_image_url: cover.card,
-      gallery_urls: [] as string[],
+      gallery_urls: story?.gallery_urls ?? [],
+      ...(isAdmin ? { author_profile_id: authorProfileId } : {}),
     };
   }
 
@@ -139,21 +317,50 @@ export default function StoryForm({
     return null;
   }
 
-  async function persist(targetStatus: StoryStatus) {
+  const persist = useCallback(async (targetStatus: StoryStatus) => {
+    if (persistLock.current) {
+      if (targetStatus !== 'draft') {
+        setError('A save is already in progress. Please wait a moment and try again.');
+      }
+      return;
+    }
+    persistLock.current = true;
+    setSubmitting(true);
+    setError('');
+
     const originalFull = story?.image_url ?? null;
     const originalCard = story?.card_image_url ?? null;
     let uploadedFull: string | null = null;
     let uploadedCard: string | null = null;
 
     try {
-      const cover = await uploadCover();
+      const publishMedia = targetStatus === 'pending' || targetStatus === 'approved';
+      const cover = await uploadCover(publishMedia ? 'published' : 'draft');
       uploadedFull = cover.full;
       uploadedCard = cover.card;
-      const payload = buildPayload(targetStatus, cover);
+      let payload = buildPayload(targetStatus, cover);
 
-      let storyId = story?.id;
+      if (publishMedia) {
+        const promoted = await promoteStoryMediaForPublish(userId, {
+          image_url: payload.image_url,
+          card_image_url: payload.card_image_url,
+          content_html: payload.content_html,
+          content_json: payload.content_json as JSONContent,
+        });
+        payload = {
+          ...payload,
+          image_url: promoted.image_url,
+          card_image_url: promoted.card_image_url,
+          content_html: promoted.content_html ?? payload.content_html,
+          content_json: promoted.content_json ?? payload.content_json,
+        };
+        uploadedFull = promoted.image_url;
+        uploadedCard = promoted.card_image_url;
+      }
 
-      if (mode === 'create') {
+      let storyId = savedStoryId ?? story?.id;
+
+      if (!storyId) {
         const { data, error: insertError } = await supabase
           .from('stories')
           .insert({ ...payload, user_id: userId })
@@ -161,23 +368,13 @@ export default function StoryForm({
           .single();
         if (insertError) throw insertError;
         storyId = data.id;
-      } else if (story) {
-        const updates: Record<string, unknown> = { ...payload };
-        if (isAdmin) updates.status = targetStatus;
-        else if (story.status === 'rejected' && targetStatus === 'pending') {
-          updates.status = 'pending';
-        } else if (story.status === 'draft' && targetStatus === 'pending') {
-          updates.status = 'pending';
-        } else if (story.status === 'draft' && targetStatus === 'draft') {
-          updates.status = 'draft';
-        }
-
+        setSavedStoryId(data.id);
+      } else {
         const { error: updateError } = await supabase
           .from('stories')
-          .update(updates)
-          .eq('id', story.id);
+          .update(payload)
+          .eq('id', storyId);
         if (updateError) throw updateError;
-        storyId = story.id;
       }
 
       if (storyId) {
@@ -198,14 +395,21 @@ export default function StoryForm({
         }
       }
 
-      const msg =
-        targetStatus === 'draft'
-          ? 'Draft saved.'
-          : mode === 'create'
+      if (targetStatus === 'draft') {
+        markRemoteSaved();
+        toast('Draft saved.', 'success');
+      } else {
+        if (storyId) {
+          clearStoryDraftCache(userId, storyId);
+          markRemoteSaved();
+        }
+        const msg =
+          targetStatus === 'pending'
             ? 'Story submitted for review.'
             : 'Story updated.';
-      toast(msg, 'success');
-      onSuccess();
+        toast(msg, 'success');
+        if (storyId) onSuccess?.({ status: targetStatus, storyId });
+      }
     } catch (err) {
       const orphans = [uploadedFull, uploadedCard].filter(Boolean) as string[];
       if (orphans.length) {
@@ -222,19 +426,40 @@ export default function StoryForm({
             ? err.message
             : 'Save failed.';
       setError(message);
+    } finally {
+      persistLock.current = false;
+      setSubmitting(false);
     }
-  }
+  }, [
+    savedStoryId,
+    story,
+    userId,
+    mode,
+    isAdmin,
+    status,
+    title,
+    teaser,
+    category,
+    contentDoc,
+    contentHtml,
+    tagsInput,
+    coverState,
+    collectionValue,
+    authorProfileId,
+    onSuccess,
+    toast,
+    markRemoteSaved,
+  ]);
 
-  async function handleSaveDraft() {
+  function handleSaveDraft() {
     const v = validateDraft();
     if (v) {
       setError(v);
       return;
     }
-    setSubmitting(true);
-    setError('');
-    await persist('draft');
-    setSubmitting(false);
+    if (persistLock.current || submitting) return;
+    cancelPendingSync();
+    void persist('draft');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -246,41 +471,49 @@ export default function StoryForm({
       return;
     }
 
+    const submittingDraft =
+      story?.status === 'draft' || (mode === 'create' && !story);
+
     if (mode === 'edit') {
       const ok = await confirm({
-        title: story?.status === 'draft' ? 'Submit for review?' : 'Save changes?',
+        title: submittingDraft ? 'Submit for review?' : 'Save changes?',
         message:
-          story?.status === 'draft'
+          submittingDraft
             ? 'Your story will be sent for admin review.'
             : 'Your edits will be saved to this story.',
-        confirmLabel: story?.status === 'draft' ? 'Submit for review' : 'Save changes',
+        confirmLabel: submittingDraft ? 'Submit for review' : 'Save changes',
         cancelLabel: 'Keep editing',
       });
       if (!ok) return;
     }
 
-    setSubmitting(true);
+    cancelPendingSync();
     setError('');
-    const targetStatus: StoryStatus =
-      story?.status === 'draft' || mode === 'create' ? 'pending' : status;
-    await persist(isAdmin && mode === 'edit' ? status : targetStatus);
-    setSubmitting(false);
+    await persist(resolveSubmitStatus());
   }
 
-  const isDraft = story?.status === 'draft' || (!story && mode === 'create');
+  const isDraft = story?.status === 'draft' || (mode === 'create' && !story);
+  const isDraftSubmit = story?.status === 'draft' || (mode === 'create' && !story);
   const submitLabel =
     submitting
       ? 'Saving...'
-      : story?.status === 'draft'
+      : isDraftSubmit
         ? 'Submit for Review'
-        : mode === 'create'
-          ? 'Submit for Review'
-          : isAdmin && mode === 'edit'
-            ? 'Save Changes'
-            : 'Save Changes';
+        : isAdmin && mode === 'edit'
+          ? 'Save Changes'
+          : 'Save Changes';
 
   return (
     <form className="submit-form" onSubmit={handleSubmit}>
+      {isAutosaveEligible && autosaveMessage && (
+        <p
+          className={`autosave-status autosave-status--${autosaveStatus}`}
+          role="status"
+          aria-live="polite"
+        >
+          {autosaveMessage}
+        </p>
+      )}
       {error && <div className="form-error">{error}</div>}
 
       <div className="form-group">
@@ -351,6 +584,14 @@ export default function StoryForm({
         onChange={setCollectionValue}
         disabled={submitting}
       />
+
+      {isAdmin && (
+        <AuthorProfileSelector
+          value={authorProfileId}
+          onChange={setAuthorProfileId}
+          disabled={submitting}
+        />
+      )}
 
       {isAdmin && mode === 'edit' && story?.status !== 'draft' && (
         <div className="form-group">

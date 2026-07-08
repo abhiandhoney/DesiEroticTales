@@ -4,7 +4,7 @@ import { getStoryTeaser } from '../lib/storyTeaser';
 interface StorySummaryPanelProps {
   story: Story;
   readTime: string;
-  author?: { username: string; display_name?: string | null };
+  author?: { slug: string; displayName: string };
 }
 
 export default function StorySummaryPanel({ story, readTime, author }: StorySummaryPanelProps) {
@@ -14,7 +14,7 @@ export default function StorySummaryPanel({ story, readTime, author }: StorySumm
     `Style: Slow-burn, emotional Telugu erotica`,
     `Read time: ${readTime}`,
     story.tags?.length ? `Tags: ${story.tags.map((t) => `#${t}`).join(', ')}` : null,
-    author?.username ? `Writer: @${author.username}` : null,
+    author ? `Writer: ${author.displayName}` : null,
     story.like_count > 0 ? `${story.like_count.toLocaleString()} reader appreciations` : null,
     story.views > 0 ? `${story.views.toLocaleString()} reads` : null,
   ].filter(Boolean) as string[];
