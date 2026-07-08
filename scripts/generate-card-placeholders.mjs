@@ -82,7 +82,8 @@ function placeholderSvg({ bg, accent, gold, motif }, i) {
   </defs>
   <rect width="800" height="450" fill="url(#${gradId})"/>
   ${decor}
-  <text x="400" y="238" text-anchor="middle" font-family="Georgia, serif" font-size="42" font-weight="600" fill="${gold}" fill-opacity="0.55" letter-spacing="0.2em">DESI TALES</text>
+  <text x="400" y="228" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-weight="600" fill="${gold}" fill-opacity="0.58" letter-spacing="0.06em">Desi Erotic</text>
+  <text x="400" y="268" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-weight="600" fill="${gold}" fill-opacity="0.58" letter-spacing="0.06em">Tales</text>
 </svg>`;
 }
 

@@ -22,13 +22,13 @@ export const STORY_CATEGORY_DEFS = [
   },
   {
     id: 'Office',
-    label: 'Office / Boss Stories',
+    label: 'Office',
     slug: 'office-stories',
     description: 'Workplace slow-burn Telugu erotica — boss, colleague, and panimanishi tension.',
   },
   {
     id: 'College',
-    label: 'College / Hostel Stories',
+    label: 'College',
     slug: 'college-stories',
     description: 'Campus and hostel slow-burn Telugu stories — college romance and first experiences.',
   },
@@ -46,7 +46,7 @@ export const STORY_CATEGORY_DEFS = [
   },
   {
     id: 'Stranger',
-    label: 'Stranger / Public Stories',
+    label: 'Stranger',
     slug: 'stranger-stories',
     description: 'Stranger and public-place slow-burn Telugu tales — fantasy scenarios with emotional depth.',
   },
