@@ -157,12 +157,14 @@ async function main() {
 
   const mark512 = await rasteriseMark(path.join(brandDir, 'logo-mark.png'), 512);
   await rasteriseMark(path.join(brandDir, 'logo-mark-64.png'), 64);
-  const mark32 = await rasteriseMark(path.join(assetsDir, 'favicon-32.png'), 32);
-  const mark16 = await rasteriseMark(path.join(assetsDir, 'favicon-16.png'), 16);
+  await rasteriseMark(path.join(brandDir, 'favicon-32.png'), 32);
+  await rasteriseMark(path.join(brandDir, 'favicon-16.png'), 16);
   const mark180 = await rasteriseMark(path.join(assetsDir, 'apple-touch-icon.png'), 180);
 
-  fs.writeFileSync(path.join(brandDir, 'logo-mark.svg'), svgWithEmbeddedPng(mark512, 512));
-  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgWithEmbeddedPng(mark32, 32));
+  const logoMarkSvg = svgWithEmbeddedPng(mark512, 512);
+  fs.writeFileSync(path.join(brandDir, 'logo-mark.svg'), logoMarkSvg);
+  // Keep /favicon.svg in sync with the navbar logo mark for direct /favicon.ico requests.
+  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), logoMarkSvg);
   fs.writeFileSync(path.join(brandDir, 'logo.svg'), await buildFullLogoSvg(mark512));
 
   await buildOgImage(mark512);
