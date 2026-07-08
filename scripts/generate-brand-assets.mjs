@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Rasterise brand SVGs into PNG assets (favicon, apple-touch, OG image).
+ * Rasterise DET monogram (logo-mark-source.jpg) into PNG/SVG brand assets.
  */
 import fs from 'fs';
 import path from 'path';
@@ -13,75 +13,145 @@ const publicDir = path.join(root, 'public');
 const assetsDir = path.join(publicDir, 'assets');
 const brandDir = path.join(publicDir, 'brand');
 
-async function rasterise(svgPath, outPath, width, height = width) {
-  const svg = fs.readFileSync(svgPath);
-  await sharp(svg, { density: 300 })
-    .resize(width, height, { fit: 'contain', background: { r: 12, g: 10, b: 10, alpha: 1 } })
+const BG = { r: 12, g: 10, b: 10, alpha: 1 };
+const SOURCE = path.join(brandDir, 'logo-mark-source.jpg');
+
+function svgWithEmbeddedPng(pngBuffer, size, label = 'DesiEroticTales DET') {
+  const b64 = pngBuffer.toString('base64');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}" role="img" aria-label="${label}">
+  <rect width="${size}" height="${size}" fill="#0c0a0a"/>
+  <image width="${size}" height="${size}" href="data:image/png;base64,${b64}"/>
+</svg>`;
+}
+
+async function markPng(size) {
+  return sharp(SOURCE)
+    .resize(size, size, { fit: 'contain', background: BG })
+    .png()
+    .toFile(path.join(brandDir, `_tmp-mark-${size}.png`))
+    .then(() => fs.readFileSync(path.join(brandDir, `_tmp-mark-${size}.png`)));
+}
+
+async function rasteriseMark(outPath, size) {
+  const buf = await markPng(size);
+  await sharp(buf).png().toFile(outPath);
+  return buf;
+}
+
+async function circularAvatar(outPath, size) {
+  const inset = Math.round(size * 0.08);
+  const inner = size - inset * 2;
+  const mark = await sharp(SOURCE)
+    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+
+  const circleMask = Buffer.from(
+    `<svg width="${size}" height="${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="white"/></svg>`,
+  );
+
+  const bg = await sharp({
+    create: { width: size, height: size, channels: 4, background: { r: 26, g: 20, b: 20, alpha: 255 } },
+  })
+    .png()
+    .toBuffer();
+
+  const flat = await sharp(bg)
+    .composite([{ input: mark, left: inset, top: inset }])
+    .png()
+    .toBuffer();
+
+  await sharp(flat)
+    .composite([{ input: circleMask, blend: 'dest-in' }])
     .png()
     .toFile(outPath);
 }
 
-const ogSvg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+async function buildOgImage(markBuf) {
+  const width = 1200;
+  const height = 630;
+  const markSize = 300;
+
+  const bgSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#030303"/>
       <stop offset="55%" stop-color="#0c0a0a"/>
       <stop offset="100%" stop-color="#1a1414"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e8c45c"/>
-      <stop offset="100%" stop-color="#c9a227"/>
-    </linearGradient>
-    <linearGradient id="burgundy" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#5c1528"/>
-      <stop offset="100%" stop-color="#9e1a38"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="30%" cy="40%" r="55%">
-      <stop offset="0%" stop-color="#9e1a38" stop-opacity="0.22"/>
+    <radialGradient id="glow" cx="22%" cy="42%" r="50%">
+      <stop offset="0%" stop-color="#9e1a38" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="#9e1a38" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  <rect width="${width}" height="${height}" fill="url(#glow)"/>
   <rect x="80" y="80" width="1040" height="470" rx="24" fill="none" stroke="#2a2220" stroke-width="2"/>
-  <g transform="translate(120 175) scale(2.8)">
-    <rect x="2" y="2" width="60" height="60" rx="14" fill="#0c0a0a" stroke="#2a2220" stroke-width="2"/>
-    <path d="M32 14c-1 0-2 .4-2.6 1.1L20 26.5V46c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V26.5L34.6 15.1C34 14.4 33 14 32 14z" fill="url(#burgundy)" opacity="0.35"/>
-    <path d="M22 28v16c0 1.1.9 2 2 2h4V26l-4 2z" fill="url(#burgundy)"/>
-    <path d="M42 28v18h-4V26l4 2z" fill="url(#gold)"/>
-    <path d="M30 24h4v20h-4z" fill="#2a2220"/>
-    <path d="M32 11c2.2 0 4 1.8 4 4 0 1.4-.7 2.6-1.8 3.3L32 20l-2.2-1.7C28.7 17.6 28 16.4 28 15c0-2.2 1.8-4 4-4z" fill="url(#gold)"/>
-    <circle cx="32" cy="15" r="1.2" fill="#f8f0e4"/>
-  </g>
-  <text x="340" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#f8f0e4">Desi</text>
-  <text x="470" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#9e1a38">Erotic</text>
-  <text x="680" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#e8c45c">Tales</text>
-  <text x="340" y="320" font-family="Arial, sans-serif" font-size="28" letter-spacing="0.12em" fill="#b0a498">TELUGU &amp; DESI EROTIC FICTION</text>
-  <text x="340" y="390" font-family="Georgia, serif" font-size="34" fill="#f8f0e4">Kamakathalu · Boothu kathalu · 20+ categories</text>
-  <text x="340" y="450" font-family="Arial, sans-serif" font-size="26" fill="#b0a498">desierotictales.online</text>
+  <text x="460" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#f8f0e4">Desi</text>
+  <text x="590" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#9e1a38">Erotic</text>
+  <text x="800" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" fill="#e8c45c">Tales</text>
+  <text x="460" y="340" font-family="Arial, sans-serif" font-size="28" letter-spacing="0.12em" fill="#b0a498">TELUGU &amp; DESI EROTIC FICTION</text>
+  <text x="460" y="400" font-family="Georgia, serif" font-size="34" fill="#f8f0e4">Kamakathalu · Boothu kathalu · 20+ categories</text>
+  <text x="460" y="460" font-family="Arial, sans-serif" font-size="26" fill="#b0a498">desierotictales.online</text>
 </svg>`;
 
-async function main() {
-  fs.mkdirSync(assetsDir, { recursive: true });
+  const mark = await sharp(markBuf)
+    .resize(markSize, markSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
 
-  const mark = path.join(brandDir, 'logo-mark.svg');
-  const faviconSvg = path.join(publicDir, 'favicon.svg');
-  const defaultAvatar = path.join(assetsDir, 'default-avatar.svg');
+  const bg = await sharp(Buffer.from(bgSvg)).resize(width, height).png().toBuffer();
 
-  await rasterise(mark, path.join(assetsDir, 'apple-touch-icon.png'), 180);
-  await rasterise(faviconSvg, path.join(assetsDir, 'favicon-32.png'), 32);
-  await rasterise(faviconSvg, path.join(assetsDir, 'favicon-16.png'), 16);
-  await rasterise(defaultAvatar, path.join(assetsDir, 'default-avatar.png'), 256);
-  await rasterise(mark, path.join(assetsDir, 'admin-avatar.png'), 256);
-  await rasterise(mark, path.join(assetsDir, 'admin-avatar-unisex.png'), 256);
-
-  await sharp(Buffer.from(ogSvg), { density: 150 })
-    .resize(1200, 630)
+  await sharp(bg)
+    .composite([{ input: mark, left: 110, top: 165 }])
     .png()
     .toFile(path.join(assetsDir, 'og-image.png'));
+}
 
-  console.log('Brand PNG assets generated in public/assets/');
+async function buildFullLogoSvg(mark512) {
+  const mark64 = await sharp(mark512).resize(64, 64, { fit: 'contain', background: BG }).png().toBuffer();
+  const b64 = mark64.toString('base64');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 48" role="img" aria-label="DesiEroticTales">
+  <image x="0" y="0" width="44" height="44" href="data:image/png;base64,${b64}"/>
+  <text x="54" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="600" fill="#f8f0e4">Desi</text>
+  <text x="98" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="600" fill="#9e1a38">Erotic</text>
+  <text x="168" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="600" fill="#e8c45c">Tales</text>
+  <text x="54" y="40" font-family="Arial, sans-serif" font-size="9" letter-spacing="0.14em" fill="#b0a498">TELUGU &amp; DESI FICTION</text>
+</svg>`;
+}
+
+async function main() {
+  if (!fs.existsSync(SOURCE)) {
+    console.error('Missing logo source:', SOURCE);
+    process.exit(1);
+  }
+
+  fs.mkdirSync(assetsDir, { recursive: true });
+  fs.mkdirSync(brandDir, { recursive: true });
+
+  const mark512 = await rasteriseMark(path.join(brandDir, 'logo-mark.png'), 512);
+  await rasteriseMark(path.join(brandDir, 'logo-mark-64.png'), 64);
+  const mark32 = await rasteriseMark(path.join(assetsDir, 'favicon-32.png'), 32);
+  const mark16 = await rasteriseMark(path.join(assetsDir, 'favicon-16.png'), 16);
+  const mark180 = await rasteriseMark(path.join(assetsDir, 'apple-touch-icon.png'), 180);
+
+  fs.writeFileSync(path.join(brandDir, 'logo-mark.svg'), svgWithEmbeddedPng(mark512, 512));
+  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgWithEmbeddedPng(mark32, 32));
+  fs.writeFileSync(path.join(brandDir, 'logo.svg'), await buildFullLogoSvg(mark512));
+
+  await buildOgImage(mark512);
+  await circularAvatar(path.join(assetsDir, 'admin-avatar.png'), 256);
+  await circularAvatar(path.join(assetsDir, 'admin-avatar-unisex.png'), 256);
+  await circularAvatar(path.join(assetsDir, 'default-avatar.png'), 256);
+
+  for (const f of fs.readdirSync(brandDir).filter((n) => n.startsWith('_tmp-mark-'))) {
+    fs.unlinkSync(path.join(brandDir, f));
+  }
+
+  console.log('Brand assets generated from DET monogram (v2).');
 }
 
 main().catch((err) => {

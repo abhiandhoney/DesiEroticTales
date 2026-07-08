@@ -20,10 +20,10 @@
       "purpose": "any"
     },
     {
-      "src": "/assets/og-image.png",
+      "src": "/brand/logo-mark.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/brand/logo-mark.svg",

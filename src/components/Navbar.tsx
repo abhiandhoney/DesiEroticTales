@@ -4,6 +4,7 @@ import { useAuth, signInWithGoogle } from '../hooks/useAuth';
 import { accountDisplayLabel } from '../lib/privacy';
 import UserMenu from './UserMenu';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { BRAND_LOGO_MARK } from '../lib/brand';
 
 export default function Navbar() {
   const { user, profile, loading, isAdmin, isWriter } = useAuth();
@@ -65,7 +66,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand" onClick={() => setMenuOpen(false)}>
           <img
-            src="/brand/logo-mark.svg"
+            src={BRAND_LOGO_MARK}
             alt=""
             className="navbar-brand-icon"
             width={32}
