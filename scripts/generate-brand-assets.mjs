@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Rasterise DET monogram (logo-mark-source.jpg) into PNG/SVG brand assets.
+ * Rasterise DET v2 monogram into PNG/SVG brand assets.
  */
 import fs from 'fs';
 import path from 'path';
@@ -14,7 +14,7 @@ const assetsDir = path.join(publicDir, 'assets');
 const brandDir = path.join(publicDir, 'brand');
 
 const BG = { r: 12, g: 10, b: 10, alpha: 1 };
-const SOURCE = path.join(brandDir, 'logo-mark-source.jpg');
+const SOURCE = path.join(brandDir, 'det-logo-v2-monogram.jpg');
 const PROCESSED = path.join(brandDir, 'logo-mark-processed.png');
 
 /** Remove near-white JPEG corners and flatten onto brand background. */
