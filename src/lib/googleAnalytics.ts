@@ -1,4 +1,4 @@
-export const GA_MEASUREMENT_ID = 'G-8WRXRT37LZ';
+export const GA_MEASUREMENT_ID = 'G-N93N09KHZ2';
 
 let initStarted = false;
 
