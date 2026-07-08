@@ -418,6 +418,7 @@ a.user-menu-item { text-decoration: none; }
 .story-card:hover { transform: translateY(-6px); box-shadow: var(--shadow), var(--shadow-glow); border-color: rgba(184, 29, 63, 0.6); }
 .story-card-image { aspect-ratio: 16 / 9; overflow: hidden; background: var(--bg-elevated); }
 .story-card-image img,
+.story-card-image .story-card-cover,
 .safe-image-fallback.story-card-image,
 .story-card-image .safe-image-fallback {
   width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s;
@@ -466,6 +467,25 @@ a.user-menu-item { text-decoration: none; }
 .autosave-status--local { color: var(--text-muted); }
 .autosave-status--error { color: var(--accent-red); }
 .form-group { margin-bottom: 1.5rem; }
+.category-multi-select { margin-top: 0.35rem; }
+.category-chip-grid {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;
+}
+.category-chip {
+  font-size: 0.8rem; padding: 0.45rem 0.75rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-muted);
+  cursor: pointer; transition: border-color 0.2s, background 0.2s, color 0.2s;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+}
+.category-chip:hover:not(:disabled) { border-color: var(--accent-gold); color: var(--text-primary); }
+.category-chip--active {
+  border-color: var(--accent-red); background: rgba(158, 26, 56, 0.18); color: var(--text-primary);
+}
+.category-chip--primary { box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.35); }
+.category-chip-badge {
+  font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent-gold-soft);
+}
 .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--accent-gold-soft); }
 .form-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; }
 .char-count { display: block; text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
@@ -970,6 +990,7 @@ button.action-btn { appearance: none; }
   font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
   background: rgba(0, 0, 0, 0.72); color: var(--accent-gold-soft);
   padding: 0.25rem 0.55rem; border-radius: 999px;
+  cursor: pointer; border: none;
   border: 1px solid rgba(201, 162, 39, 0.25);
 }
 .story-card .story-teaser {

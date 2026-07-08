@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js",
-    "build": "node ./node_modules/typescript/bin/tsc -b && node scripts/generate-brand-assets.mjs && node ./node_modules/vite/bin/vite.js build && node scripts/generate-seo.mjs",
+    "build": "node ./node_modules/typescript/bin/tsc -b && node scripts/generate-card-placeholders.mjs && node scripts/generate-brand-assets.mjs && node ./node_modules/vite/bin/vite.js build && node scripts/generate-seo.mjs",
     "brand": "node scripts/generate-brand-assets.mjs",
     "seo": "node scripts/generate-seo.mjs",
     "deploy": "node ./node_modules/wrangler/bin/wrangler.js deploy",

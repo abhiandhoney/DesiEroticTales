@@ -15,6 +15,8 @@ import type { StoryAuthorDisplay } from '../types';
 import { LikeStat } from '../components/LikeIcon';
 import { getStoryPath } from '../lib/slug';
 import AdSlot from '../components/AdSlot';
+import { applyCategoryFilter } from '../lib/categoryQuery';
+import { normalizeCategory, type StoryCategory } from '../lib/categories';
 import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -48,11 +50,17 @@ export default function Home() {
         .from('stories')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'approved');
-      if (category) countQuery = countQuery.eq('category', category);
+      if (category) {
+        const cat = normalizeCategory(category) as StoryCategory;
+        countQuery = applyCategoryFilter(countQuery, cat);
+      }
 
       let query = supabase.from('stories').select(STORY_LIST_COLUMNS).eq('status', 'approved')
         .order('created_at', { ascending: false }).limit(LATEST_LIMIT);
-      if (category) query = query.eq('category', category);
+      if (category) {
+        const cat = normalizeCategory(category) as StoryCategory;
+        query = applyCategoryFilter(query, cat);
+      }
 
       const [{ count }, { data, error: fetchError }] = await Promise.all([countQuery, query]);
 

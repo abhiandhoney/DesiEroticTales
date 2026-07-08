@@ -11,6 +11,12 @@ import StoryCoverUploader, { type CoverUploadState } from './StoryCoverUploader'
 import RichTextEditor from './RichTextEditor';
 import CollectionSelector from './CollectionSelector';
 import AuthorProfileSelector from './AuthorProfileSelector';
+import CategoryMultiSelect from './CategoryMultiSelect';
+import {
+  STORY_CATEGORIES,
+  storyCategories,
+  type StoryCategory,
+} from '../lib/categories';
 import { formatTags, parseTagsInput } from '../lib/slug';
 import {
   applyCollectionLink,
@@ -20,13 +26,7 @@ import {
 import { emptyRichDoc, jsonToPlainText, minPlainLength } from '../lib/richTextPlain';
 import { jsonToHtml, parseStoryDoc } from '../lib/richTextEditor';
 import { sanitizeStoryHtml } from '../lib/sanitizeHtml';
-import {
-  STORY_CATEGORIES,
-  TEASER_MAX_LENGTH,
-  type Story,
-  type StoryCategory,
-  type StoryStatus,
-} from '../types';
+import { TEASER_MAX_LENGTH, type Story, type StoryStatus } from '../types';
 
 export interface StoryFormSuccess {
   status: StoryStatus;
@@ -62,9 +62,10 @@ export default function StoryForm({
 }: StoryFormProps) {
   const [title, setTitle] = useState(story?.title ?? '');
   const [teaser, setTeaser] = useState(story?.teaser ?? '');
-  const [category, setCategory] = useState<StoryCategory>(
-    (story?.category as StoryCategory) ?? STORY_CATEGORIES[0],
+  const [categories, setCategories] = useState<StoryCategory[]>(
+    story ? storyCategories(story) : [STORY_CATEGORIES[0]],
   );
+  const category = categories[0];
   const [contentDoc, setContentDoc] = useState<JSONContent>(
     story ? parseStoryDoc(story) : emptyRichDoc(),
   );
@@ -101,6 +102,7 @@ export default function StoryForm({
       title,
       teaser,
       category,
+      categories,
       tagsInput,
       contentDoc,
       contentHtml,
@@ -113,6 +115,7 @@ export default function StoryForm({
       title,
       teaser,
       category,
+      categories,
       tagsInput,
       contentDoc,
       contentHtml,
@@ -126,7 +129,7 @@ export default function StoryForm({
   const restoreFromCache = useCallback((snapshot: typeof autosaveSnapshot) => {
     setTitle(snapshot.title);
     setTeaser(snapshot.teaser);
-    setCategory(snapshot.category);
+    setCategories(snapshot.categories?.length ? snapshot.categories : [snapshot.category]);
     setTagsInput(snapshot.tagsInput);
     setContentDoc(snapshot.contentDoc);
     setContentHtml(snapshot.contentHtml);
@@ -160,6 +163,7 @@ export default function StoryForm({
       content_json: contentDoc,
       content_html: html,
       category,
+      categories,
       tags: parseTagsInput(tagsInput),
       status: resolveAutosaveStatus(),
       image_url: cover.full,
@@ -210,6 +214,7 @@ export default function StoryForm({
     title,
     teaser,
     category,
+    categories,
     tagsInput,
     isAdmin,
     authorProfileId,
@@ -283,6 +288,7 @@ export default function StoryForm({
       content_json: contentDoc,
       content_html: html,
       category,
+      categories,
       tags: parseTagsInput(tagsInput),
       status: targetStatus,
       image_url: cover.full,
@@ -565,17 +571,12 @@ export default function StoryForm({
       </div>
 
       <div className="form-group">
-        <label htmlFor="category">Category</label>
-        <select
-          id="category"
-          className="select"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as StoryCategory)}
-        >
-          {STORY_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+        <label>Categories</label>
+        <CategoryMultiSelect
+          value={categories}
+          onChange={setCategories}
+          disabled={submitting}
+        />
       </div>
 
       <CollectionSelector

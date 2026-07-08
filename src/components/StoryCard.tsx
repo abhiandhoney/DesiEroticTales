@@ -7,7 +7,9 @@ import { storyPlainText } from '../lib/richTextPlain';
 import SafeImage from './SafeImage';
 import ProfileAvatar from './ProfileAvatar';
 import { LikeStat } from './LikeIcon';
-import { getStoryPath, getWriterPath } from '../lib/slug';
+import { categoryLabel, primaryCategory } from '../lib/categories';
+import { getCategoryPath, getStoryPath, getWriterPath } from '../lib/slug';
+import { getStoryCardPlaceholder } from '../lib/storyCardPlaceholders';
 
 interface StoryCardProps {
   story: Story;
@@ -24,7 +26,8 @@ export default function StoryCard({
   authorDisplay,
 }: StoryCardProps) {
   const navigate = useNavigate();
-  const cardImage = getCardImageUrl(story);
+  const cardImage = getCardImageUrl(story) ?? getStoryCardPlaceholder(story.id);
+  const mainCategory = primaryCategory(story);
   const photoCount = getStoryMediaUrls(story).length;
   const likes = story.like_count ?? 0;
   const readMins = estimateReadTime(storyPlainText(story));
@@ -36,12 +39,26 @@ export default function StoryCard({
   return (
     <Link to={getStoryPath(story)} className="story-card">
       <div className="story-card-image">
-        {cardImage ? (
-          <SafeImage src={cardImage} alt={story.title} loading="lazy" />
-        ) : (
-          <div className="safe-image-fallback" />
-        )}
-        <span className="story-card-category-badge">{story.category}</span>
+        <SafeImage src={cardImage} alt={story.title} loading="lazy" className="story-card-cover" />
+        <span
+          role="link"
+          tabIndex={0}
+          className="story-card-category-badge"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(getCategoryPath(mainCategory));
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(getCategoryPath(mainCategory));
+            }
+          }}
+        >
+          {categoryLabel(mainCategory)}
+        </span>
         {badge && <span className="story-card-badge">{badge}</span>}
         {story.is_editors_choice && !badge && (
           <span className="story-card-badge">Editor&apos;s Choice</span>

@@ -1,4 +1,4 @@
-import { STORY_CATEGORIES } from '../types';
+import { STORY_CATEGORY_DEFS } from '../lib/categories';
 
 interface StoryFiltersProps {
   search?: string;
@@ -43,8 +43,8 @@ export default function StoryFilters({
           aria-label="Filter by category"
         >
           <option value="">All categories</option>
-          {STORY_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+          {STORY_CATEGORY_DEFS.map((cat) => (
+            <option key={cat.id} value={cat.id}>{cat.label}</option>
           ))}
         </select>
         {sort !== undefined && onSortChange && (

@@ -1,5 +1,11 @@
-import { STORY_CATEGORIES, type Story, type StoryCategory } from '../types';
-import categorySlugMap from './categorySlugs.json';
+import type { Story } from '../types';
+import {
+  CATEGORY_SLUG_MAP,
+  LEGACY_CATEGORY_SLUGS,
+  STORY_CATEGORIES,
+  normalizeCategory,
+  type StoryCategory,
+} from './categories';
 
 /** Paths that must not be interpreted as category/story slugs. */
 export const RESERVED_PATHS = new Set([
@@ -45,8 +51,6 @@ export function slugify(text: string): string {
   return s || 'story';
 }
 
-const CATEGORY_SLUG_MAP = categorySlugMap as Record<StoryCategory, string>;
-
 export { CATEGORY_SLUG_MAP };
 
 const SLUG_TO_CATEGORY = Object.fromEntries(
@@ -54,14 +58,15 @@ const SLUG_TO_CATEGORY = Object.fromEntries(
 ) as Record<string, StoryCategory>;
 
 export function categoryToSlug(category: string): string {
-  if (category in CATEGORY_SLUG_MAP) {
-    return CATEGORY_SLUG_MAP[category as StoryCategory];
+  const norm = normalizeCategory(category);
+  if (norm in CATEGORY_SLUG_MAP) {
+    return CATEGORY_SLUG_MAP[norm];
   }
   return slugify(category);
 }
 
 export function slugToCategory(slug: string): StoryCategory | null {
-  return SLUG_TO_CATEGORY[slug] ?? null;
+  return SLUG_TO_CATEGORY[slug] ?? LEGACY_CATEGORY_SLUGS[slug] ?? null;
 }
 
 export function getStoryCanonicalPath(story: Pick<Story, 'category' | 'slug'>): string {

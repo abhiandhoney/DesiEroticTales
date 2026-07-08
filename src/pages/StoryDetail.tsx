@@ -17,6 +17,7 @@ import WriterCitationBlock from '../components/WriterCitationBlock';
 import { fetchStoryCollectionLink, type StoryCollectionLink } from '../lib/collections';
 import { storyPlainText } from '../lib/richTextPlain';
 import { useStoryLoader } from '../hooks/useStoryLoader';
+import { categoryLabel, primaryCategory } from '../lib/categories';
 import { getCategoryPath, getStoryCanonicalPath, getWriterPath, RESERVED_PATHS } from '../lib/slug';
 import { absoluteUrl, buildArticleJsonLd, buildBreadcrumbJsonLd, storyBreadcrumbs } from '../lib/seo';
 import { storyPageMeta } from '../lib/seoMeta';
@@ -94,20 +95,22 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
     );
   }
 
+  const mainCategory = primaryCategory(story);
+
   return (
     <article className="page story-detail-page">
       <ReadingProgress />
       <nav className="story-breadcrumbs" aria-label="Breadcrumb">
         <Link to="/">Home</Link>
         <span aria-hidden="true"> / </span>
-        <Link to={getCategoryPath(story.category)}>{story.category}</Link>
+        <Link to={getCategoryPath(mainCategory)}>{categoryLabel(mainCategory)}</Link>
         <span aria-hidden="true"> / </span>
         <span>{story.title}</span>
       </nav>
       <Link to="/stories" className="story-back-link">&larr; Back to all stories</Link>
       <header className="story-header">
-        <Link to={getCategoryPath(story.category)} className="story-category story-category-link">
-          {story.category}
+        <Link to={getCategoryPath(mainCategory)} className="story-category story-category-link">
+          {categoryLabel(mainCategory)}
         </Link>
         {story.is_editors_choice && (
           <span className="story-badge-editors">Editor&apos;s Choice</span>
@@ -196,7 +199,7 @@ function StoryDetailInner({ legacyId, categorySlug, storySlug }: StoryDetailInne
       </footer>
       <AdSlot slot="story-bottom" className="ad-slot-story-bottom" />
       <DisqusComments story={story} />
-      <RelatedStoriesSection storyId={story.id} category={story.category} />
+      <RelatedStoriesSection storyId={story.id} category={mainCategory} />
     </article>
   );
 }

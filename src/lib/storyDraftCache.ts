@@ -2,13 +2,14 @@ import type { JSONContent } from '@tiptap/core';
 import type { CollectionFormValue } from './collections';
 import type { StoryCategory } from '../types';
 
-export const CACHE_VERSION = 2 as const;
+export const CACHE_VERSION = 3 as const;
 const KEY_PREFIX = 'desi-tales:draft:';
 
 export interface StoryDraftSnapshot {
   title: string;
   teaser: string;
   category: StoryCategory;
+  categories: StoryCategory[];
   tagsInput: string;
   contentDoc: JSONContent;
   contentHtml: string;
@@ -44,6 +45,7 @@ export function snapshotFingerprint(snapshot: StoryDraftSnapshot): string {
     title: snapshot.title.trim(),
     teaser: snapshot.teaser.trim(),
     category: snapshot.category,
+    categories: snapshot.categories,
     tagsInput: snapshot.tagsInput.trim(),
     contentDoc: snapshot.contentDoc,
     contentHtml: snapshot.contentHtml,
@@ -67,6 +69,9 @@ export function readStoryDraftCache(
     if (storyId && parsed.storyId && parsed.storyId !== storyId) return null;
     if (!parsed.snapshot.collectionValue) {
       parsed.snapshot.collectionValue = { mode: 'none' };
+    }
+    if (!parsed.snapshot.categories?.length) {
+      parsed.snapshot.categories = [parsed.snapshot.category];
     }
     return parsed;
   } catch {

@@ -8,6 +8,7 @@ import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
 import type { StoryAuthorDisplay } from '../types';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { buildCollectionJsonLd, buildWebSiteJsonLd, buildCategoryFaqJsonLd } from '../lib/seo';
+import { applyCategoryFilter } from '../lib/categoryQuery';
 import { getCategoryPath, slugToCategory } from '../lib/slug';
 import { categoryPageMeta } from '../lib/seoMeta';
 import CategoryIntro from '../components/CategoryIntro';
@@ -55,21 +56,25 @@ export default function CategoryArchive() {
 
     let cancelled = false;
 
-    async function load() {
+    async function load(cat: StoryCategory) {
       setLoading(true);
       const [{ count }, { data, error }] = await Promise.all([
-        supabase
-          .from('stories')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'approved')
-          .eq('category', category),
-        supabase
-          .from('stories')
-          .select(STORY_LIST_COLUMNS)
-          .eq('status', 'approved')
-          .eq('category', category)
-          .order('created_at', { ascending: false })
-          .limit(PAGE_SIZE),
+        applyCategoryFilter(
+          supabase
+            .from('stories')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'approved'),
+          cat,
+        ),
+        applyCategoryFilter(
+          supabase
+            .from('stories')
+            .select(STORY_LIST_COLUMNS)
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false })
+            .limit(PAGE_SIZE),
+          cat,
+        ),
       ]);
 
       if (cancelled) return;
@@ -89,7 +94,7 @@ export default function CategoryArchive() {
       setLoading(false);
     }
 
-    load();
+    load(category);
     return () => { cancelled = true; };
   }, [category]);
 

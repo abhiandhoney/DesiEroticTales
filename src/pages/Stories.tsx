@@ -15,6 +15,8 @@ import { buildCollectionJsonLd, buildWebSiteJsonLd } from '../lib/seo';
 import { STORIES_META } from '../lib/seoMeta';
 import AdSlot from '../components/AdSlot';
 
+import { applyCategoryFilter } from '../lib/categoryQuery';
+import { normalizeCategory, type StoryCategory } from '../lib/categories';
 import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 const LIST_COLUMNS = STORY_LIST_COLUMNS;
@@ -86,8 +88,9 @@ export default function Stories() {
     let query = supabase.from('stories').select(LIST_COLUMNS).eq('status', 'approved');
 
     if (category) {
-      countQuery = countQuery.eq('category', category);
-      query = query.eq('category', category);
+      const cat = normalizeCategory(category) as StoryCategory;
+      countQuery = applyCategoryFilter(countQuery, cat);
+      query = applyCategoryFilter(query, cat);
     }
     if (debouncedSearch.trim()) {
       const orFilter = buildStorySearchFilter(debouncedSearch);

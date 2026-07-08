@@ -6,6 +6,8 @@ import type { Story } from '../types';
 import StoryCard from './StoryCard';
 import { fetchStoryAuthorDisplays } from '../lib/storyAuthors';
 import type { StoryAuthorDisplay } from '../types';
+import { applyCategoryFilter } from '../lib/categoryQuery';
+import { normalizeCategory, type StoryCategory } from '../lib/categories';
 import { STORY_LIST_COLUMNS } from '../lib/storyListColumns';
 
 const PAGE_SIZE = 4;
@@ -29,23 +31,29 @@ export default function RelatedStoriesSection({ storyId, category }: RelatedStor
     setPopularPage(0);
     setRecentPage(0);
 
+    const cat = normalizeCategory(category) as StoryCategory;
+
     Promise.all([
-      supabase
-        .from('stories')
-        .select(STORY_LIST_COLUMNS)
-        .eq('status', 'approved')
-        .eq('category', category)
-        .neq('id', storyId)
-        .order('like_count', { ascending: false })
-        .limit(24),
-      supabase
-        .from('stories')
-        .select(STORY_LIST_COLUMNS)
-        .eq('status', 'approved')
-        .eq('category', category)
-        .neq('id', storyId)
-        .order('created_at', { ascending: false })
-        .limit(24),
+      applyCategoryFilter(
+        supabase
+          .from('stories')
+          .select(STORY_LIST_COLUMNS)
+          .eq('status', 'approved')
+          .neq('id', storyId)
+          .order('like_count', { ascending: false })
+          .limit(24),
+        cat,
+      ),
+      applyCategoryFilter(
+        supabase
+          .from('stories')
+          .select(STORY_LIST_COLUMNS)
+          .eq('status', 'approved')
+          .neq('id', storyId)
+          .order('created_at', { ascending: false })
+          .limit(24),
+        cat,
+      ),
     ]).then(([popRes, recRes]) => {
       if (popRes.error || recRes.error) {
         setError('Could not load related stories.');

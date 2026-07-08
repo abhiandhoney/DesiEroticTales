@@ -30,13 +30,23 @@ const CATEGORY_SLUG_MAP = JSON.parse(
   fs.readFileSync(path.join(root, 'src/lib/categorySlugs.json'), 'utf8'),
 );
 
-const CATEGORY_DESCRIPTIONS = {
-  Aunty: 'Mature aunty and pakkinti slow-burn tales in Telugu — emotional, realistic desi erotica.',
-  'Akka-Chelli': 'Realistic akka chelli slow-burn fiction — emotional sibling tales in Telugu.',
-  Office: 'Workplace slow-burn Telugu erotica — boss, colleague, and panimanishi tension.',
-  College: 'Campus slow-burn Telugu stories — college romance and first experiences.',
-  Friend: 'Friend pellam slow-burn Telugu tales — first-time and emotional romance.',
-};
+const CATEGORY_DESCRIPTIONS = Object.fromEntries(
+  Object.entries(CATEGORY_SLUG_MAP).map(([cat]) => {
+    const descriptions = {
+      Aunty: 'Mature aunty and pakkinti slow-burn tales in Telugu — emotional, realistic desi erotica.',
+      'Akka-Chelli': 'Akka chelli slow-burn fiction — emotional sibling tales in Telugu.',
+      'Pinni-Peddamma': 'Pinni and pedhamma slow-burn Telugu kathalu — family-adjacent emotional tales.',
+      Office: 'Workplace slow-burn Telugu erotica — boss, colleague, and office tension.',
+      College: 'Campus and hostel slow-burn Telugu stories — college romance and first experiences.',
+      Village: 'Village and home slow-burn Telugu tales — pakkinti, cousin, and desi family drama.',
+      Bhabhi: 'Bhabhi and vadhina slow-burn Telugu erotica — sister-in-law tales with tension.',
+      Stranger: 'Stranger and public-place slow-burn Telugu tales with emotional depth.',
+      'First-Time': 'First-time and slow-burn romance Telugu kathalu — friend and lover stories.',
+      Other: 'General Telugu kamakathalu and boothu kathalu — slow-burn desi erotica.',
+    };
+    return [cat, descriptions[cat] ?? `${cat} Telugu sex stories on DesiEroticTales.`];
+  }),
+);
 
 function categoryToSlug(category) {
   return CATEGORY_SLUG_MAP[category] ?? category.toLowerCase().replace(/[^a-z0-9]+/g, '-');

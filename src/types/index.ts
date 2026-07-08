@@ -45,6 +45,7 @@ export interface Story {
   content_json: Record<string, unknown> | null;
   content_html: string | null;
   category: string;
+  categories?: string[] | null;
   status: StoryStatus;
   user_id: string;
   author_profile_id: string | null;
@@ -62,30 +63,8 @@ export interface Story {
   updated_at: string | null;
 }
 
-export const STORY_CATEGORIES = [
-  'Aunty',
-  'Akka-Chelli',
-  'Amma-Koduku',
-  'Friend',
-  'Office',
-  'Fantasy',
-  'Neighbor',
-  'Cousin',
-  'College',
-  'MILF',
-  'Pakkinti Valu',
-  'Panimanishi',
-  'Pinni-Pedhamma',
-  'Maradhalu',
-  'Vadhina',
-  'Gumpu',
-  'Yavannam',
-  'Audio',
-  'Photos',
-  'Other',
-] as const;
-
-export type StoryCategory = (typeof STORY_CATEGORIES)[number];
+export type { StoryCategory } from '../lib/categories';
+export { STORY_CATEGORIES, STORY_CATEGORY_DEFS } from '../lib/categories';
 
 export interface Collection {
   id: string;

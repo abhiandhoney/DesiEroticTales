@@ -15,6 +15,27 @@ const brandDir = path.join(publicDir, 'brand');
 
 const BG = { r: 12, g: 10, b: 10, alpha: 1 };
 const SOURCE = path.join(brandDir, 'logo-mark-source.jpg');
+const PROCESSED = path.join(brandDir, 'logo-mark-processed.png');
+
+/** Remove near-white JPEG corners and flatten onto brand background. */
+async function preprocessLogoSource() {
+  const { data, info } = await sharp(SOURCE).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (r > 232 && g > 232 && b > 232) {
+      data[i + 3] = 0;
+    }
+  }
+  await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .flatten({ background: '#0c0a0a' })
+    .png()
+    .toFile(PROCESSED);
+  return PROCESSED;
+}
+
+let LOGO_INPUT = SOURCE;
 
 function svgWithEmbeddedPng(pngBuffer, size, label = 'DesiEroticTales DET') {
   const b64 = pngBuffer.toString('base64');
@@ -26,7 +47,7 @@ function svgWithEmbeddedPng(pngBuffer, size, label = 'DesiEroticTales DET') {
 }
 
 async function markPng(size) {
-  return sharp(SOURCE)
+  return sharp(LOGO_INPUT)
     .resize(size, size, { fit: 'contain', background: BG })
     .png()
     .toFile(path.join(brandDir, `_tmp-mark-${size}.png`))
@@ -42,7 +63,7 @@ async function rasteriseMark(outPath, size) {
 async function circularAvatar(outPath, size) {
   const inset = Math.round(size * 0.08);
   const inner = size - inset * 2;
-  const mark = await sharp(SOURCE)
+  const mark = await sharp(LOGO_INPUT)
     .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
@@ -128,6 +149,8 @@ async function main() {
     console.error('Missing logo source:', SOURCE);
     process.exit(1);
   }
+
+  LOGO_INPUT = await preprocessLogoSource();
 
   fs.mkdirSync(assetsDir, { recursive: true });
   fs.mkdirSync(brandDir, { recursive: true });

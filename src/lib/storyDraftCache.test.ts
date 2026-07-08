@@ -6,6 +6,7 @@ const baseSnapshot = (): StoryDraftSnapshot => ({
   title: 'Test Tale',
   teaser: 'A teaser',
   category: 'Aunty',
+  categories: ['Aunty'],
   tagsInput: 'telugu',
   contentDoc: emptyRichDoc(),
   contentHtml: '<p>Hello</p>',
