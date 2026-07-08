@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { remoteImageCrossOrigin } from '../lib/imageUrl';
 
 interface ProfileAvatarProps {
   name: string;
@@ -20,6 +21,7 @@ export default function ProfileAvatar({ name, avatarUrl, className = '', size = 
         className={`${sizeClass} ${className}`}
         loading="lazy"
         decoding="async"
+        crossOrigin={remoteImageCrossOrigin(avatarUrl)}
         onError={() => setFailed(true)}
       />
     );

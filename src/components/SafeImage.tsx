@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { remoteImageCrossOrigin } from '../lib/imageUrl';
 
 interface SafeImageProps {
   src: string;
@@ -21,6 +22,7 @@ export default function SafeImage({ src, alt, className, loading = 'lazy' }: Saf
       className={className}
       loading={loading}
       decoding="async"
+      crossOrigin={remoteImageCrossOrigin(src)}
       onError={() => setFailed(true)}
     />
   );
