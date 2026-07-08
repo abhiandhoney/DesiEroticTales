@@ -1,5 +1,3 @@
-import { hasAnalyticsConsent } from './cookieConsent';
-
 export const GA_MEASUREMENT_ID = 'G-8WRXRT37LZ';
 
 let initStarted = false;
@@ -8,9 +6,9 @@ function gtagScriptPresent(): boolean {
   return Boolean(document.querySelector('script[src*="googletagmanager.com/gtag/js"]'));
 }
 
-/** Load gtag once after the visitor accepts analytics cookies. */
+/** Load gtag once on app start. */
 export function loadGoogleAnalytics(): void {
-  if (initStarted || typeof window === 'undefined' || !hasAnalyticsConsent()) return;
+  if (initStarted || typeof window === 'undefined') return;
   initStarted = true;
 
   window.dataLayer = window.dataLayer || [];
@@ -31,6 +29,6 @@ export function loadGoogleAnalytics(): void {
 }
 
 export function trackPageView(pagePath: string): void {
-  if (!hasAnalyticsConsent() || typeof window.gtag !== 'function') return;
+  if (typeof window.gtag !== 'function') return;
   window.gtag('event', 'page_view', { page_path: pagePath });
 }
